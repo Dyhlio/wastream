@@ -61,7 +61,7 @@ ADDON_MANIFEST = {
     "description": "Accès au contenu de Wawacity via Stremio & AllDebrid (non officiel)",
     "catalogs": [],
     "resources": ["stream"],
-    "types": ["movie", "series"],
+    "types": ["movie", "series", "anime"],
     "idPrefixes": ["tt", "kitsu"],
     "behaviorHints": {
         "configurable": True
