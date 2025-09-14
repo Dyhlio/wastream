@@ -1,14 +1,14 @@
 services:
-  wawacity-addon:
-    image: ghcr.io/spel987/wawacity-stremio-addon:latest
-    container_name: wawacity-stremio-addon
+  wastream:
+    image: dydhzo/wastream:latest
+    container_name: wastream
     ports:
       - "7000:7000"
     volumes:
       - ./data:/app/data
     environment:
-      - WAWACITY_URL=https://wawacity.diy
+      - WAWACITY_URL=https://example.com # OBLIGATOIRE
       - PORT=7000
       - DATABASE_TYPE=sqlite
-      - DATABASE_PATH=/app/data/wawacity-addon.db
+      - DATABASE_PATH=/app/data/wastream.db
     restart: unless-stopped

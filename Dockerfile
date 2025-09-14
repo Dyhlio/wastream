@@ -1,8 +1,8 @@
 FROM python:3.12-slim
 
-LABEL name="Wawacity-Stremio-Addon-v2" \
+LABEL name="WAStream" \
       description="Accès au contenu de Wawacity via Stremio & AllDebrid (non officiel)" \
-      url="https://github.com/spel987/Wawacity-Stremio-Addon"
+      url="https://github.com/Dydhzo/wastream"
 
 WORKDIR /app
 
@@ -13,4 +13,4 @@ COPY . .
 
 EXPOSE 7000
 
-CMD ["python", "-m", "wawacity.main"]
+CMD ["python", "-m", "wastream.main"]

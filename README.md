@@ -1,8 +1,8 @@
-# <img src="https://i.imgur.com/R9kh7bC.png" width="30"/> Wawacity Stremio Addon
+# <img src="https://raw.githubusercontent.com/Dydhzo/wastream/refs/heads/main/wastream/assets/wastream-logo.jpg" width="30"/> WAStream
 
 Addon Stremio qui cherche sur Wawacity, convertit en liens directs via AllDebrid et permet la lecture des fichiers. Toutes les qualités, langues et tailles disponibles sont retournées comme sources Stremio distinctes.
 
-<img src="https://i.imgur.com/oDxBfB1.jpeg">
+<img src="https://i.imgur.com/UNz4i6r.jpeg">
 
 ## 🗒️ Prérequis
 
@@ -17,18 +17,18 @@ Addon Stremio qui cherche sur Wawacity, convertit en liens directs via AllDebrid
 
 ```yaml
 services:
-  wawacity-addon:
-    image: ghcr.io/spel987/wawacity-stremio-addon:latest
-    container_name: wawacity-stremio-addon
+  wastream:
+    image: dydhzo/wastream:latest
+    container_name: wastream
     ports:
       - "7000:7000"
     volumes:
       - ./data:/app/data
     environment:
-      - WAWACITY_URL=https://wawacity.diy
+      - WAWACITY_URL=https://example.com # OBLIGATOIRE
       - PORT=7000
       - DATABASE_TYPE=sqlite
-      - DATABASE_PATH=/app/data/wawacity-addon.db
+      - DATABASE_PATH=/app/data/wastream.db
     restart: unless-stopped
 ```
 
@@ -56,7 +56,7 @@ docker-compose logs -f
 
 ### Étape 1: Télécharger le code
 
-Téléchargez la dernière version depuis GitHub : [**Download ZIP**](https://github.com/spel987/Wawacity-Stremio-Addon/archive/refs/heads/main.zip)
+Téléchargez la dernière version depuis GitHub : [**Download ZIP**](https://github.com/Dydhzo/wastream/archive/refs/heads/main.zip)
 
 Extraire le fichier ZIP et ouvrir le dossier dans un terminal
 
@@ -69,7 +69,7 @@ pip install -r requirements.txt
 ### Étape 3: Lancer l'addon
 
 ```bash
-python -m wawacity.main
+python -m wastream.main
 ```
 
 ### Étape 4: Configuration
@@ -78,7 +78,6 @@ python -m wawacity.main
 - Renseignez votre clé API AllDebrid et votre jeton d'accès API TMDB
 - **Personnalisation :** Éditez le fichier `.env` pour modifier l'URL Wawacity ou le port si nécessaire
 
-<img src="https://i.imgur.com/54qqqVA.png">
 
 ## 🛠️ Comment ça marche
 
@@ -88,7 +87,7 @@ python -m wawacity.main
 	- `imdb_id`: identifiant IMDB
 - L'addon récupère le `title` et `year` via TMDB et `imdb_id`.
 - L'addon utilise le système de scrapers avec cache intelligent et verrous distribués.
-- `movie.py` scrape Wawacity pour les films, `series.py` pour les séries, supportent 1fichier, Turbobit et Rapidgator et retournent un JSON comme celui ci:
+- `movie.py` scrape Wawacity pour les films, `series.py` pour les séries, `anime.py` pour les animes, supportent 1fichier, Turbobit et Rapidgator et retournent un JSON comme celui ci:
 
 ```json
 {
@@ -127,11 +126,3 @@ python -m wawacity.main
 ## ⚠️ Disclaimer
 
 Cet addon fait simplement l'intermédiaire entre un site web (Wawacity) et l'utilisateur via Stremio. Il ne stocke ni ne distribue aucun contenu. Le développeur n'approuve ni ne promeut l'accès à des contenus protégés par des droits d'auteur. Les utilisateurs sont seuls responsables du respect de toutes les lois applicables.
-
-## 👤 Contributeurs
-
-Merci à toutes les personnes contribuant à ce projet!
-
-<a href="https://github.com/spel987/Wawacity-Stremio-Addon/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=spel987/Wawacity-Stremio-Addon" />
-</a>
