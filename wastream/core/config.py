@@ -66,8 +66,8 @@ ADDON_MANIFEST = {
     "behaviorHints": {
         "configurable": True
     },
-    "logo": "https://raw.githubusercontent.com/Dydhzo/wastream/refs/heads/main/wastream/assets/wastream-logo.jpg",
-    "background": "https://raw.githubusercontent.com/Dydhzo/wastream/refs/heads/main/wastream/assets/wastream-background.png"
+    "logo": "https://raw.githubusercontent.com/Dydhzo/wastream/refs/heads/main/wastream/public/wastream-logo.jpg",
+    "background": "https://raw.githubusercontent.com/Dydhzo/wastream/refs/heads/main/wastream/public/wastream-background.png"
 }
 
 # === Database URL builder function ===
