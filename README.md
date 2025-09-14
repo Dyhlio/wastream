@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/Dydhzo/wastream/refs/heads/main/wastream/assets/wastream-logo.jpg" width="30"/> WAStream
+# <img src="https://raw.githubusercontent.com/Dydhzo/wastream/refs/heads/main/wastream/public/wastream-logo.jpg" width="30"/> WAStream
 
 Addon Stremio qui cherche sur Wawacity, convertit en liens directs via AllDebrid et permet la lecture des fichiers. Toutes les qualités, langues et tailles disponibles sont retournées comme sources Stremio distinctes.
 
