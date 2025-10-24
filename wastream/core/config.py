@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-from pydantic import computed_field
+from pydantic import computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -122,6 +122,23 @@ class Settings(BaseSettings):
     # Internal Configuration
     # ===========================
     CLEANUP_INTERVAL: int = 60
+
+    # ===========================
+    # Field Validators
+    # ===========================
+    @field_validator("WAWACITY_URL", "DARKI_API_URL", "PROXY_URL")
+    @classmethod
+    def normalize_urls(cls, v):
+        if isinstance(v, str):
+            return v.rstrip("/")
+        return v
+
+    @field_validator("LOG_LEVEL")
+    @classmethod
+    def normalize_log_level(cls, v):
+        if isinstance(v, str):
+            return v.upper()
+        return v
 
     # ===========================
     # Computed Properties
