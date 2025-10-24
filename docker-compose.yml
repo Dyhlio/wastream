@@ -1,0 +1,15 @@
+services:
+  wastream:
+    image: dyhlio/wastream:latest
+    container_name: wastream
+    ports:
+      - "7000:7000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - WAWACITY_URL=https://example.com
+      - DARKI_API_URL=https://api.example.com
+      - DARKI_API_KEY=your_api_key_here
+      - DATABASE_TYPE=sqlite
+      - DATABASE_PATH=/app/data/wastream.db
+    restart: unless-stopped

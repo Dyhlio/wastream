@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en" class="sl-theme-dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ADDON_NAME}} - Configuration</title>
+    <meta property="og:title" content="{{ADDON_NAME}}" />
+    <meta property="og:description" content="Stremio addon to convert DDL to streams via debrid services" />
+    <meta name="theme-color" content="#FF7F00">
+    <link rel="icon" href="/static/wastream-logo.jpg">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/dark.css" />
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"></script>
+
+    <style>
+        :not(:defined) { visibility: hidden; }
+
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* ===========================
+               Color System
+               =========================== */
+            --color-black: #0A0807;
+            --color-dark-900: #141210;
+            --color-dark-800: #1E1A17;
+            --color-dark-700: #28241F;
+
+            --color-orange-500: #FF7F00;
+            --color-orange-400: #FF9933;
+            --color-orange-300: rgba(255, 127, 0, 0.24);
+            --color-orange-100: rgba(255, 127, 0, 0.08);
+
+            --color-green-600: #0D9668;
+            --color-green-500: #10B981;
+            --color-green-400: #34D399;
+            --color-green-100: rgba(16, 185, 129, 0.08);
+
+            --color-white: #FFFFFF;
+            --color-gray-100: #EDE8E2;
+            --color-gray-200: #C4BDB3;
+            --color-gray-300: #948B7F;
+
+            /* ===========================
+               Spacing Scale
+               =========================== */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 24px;
+            --space-7: 28px;
+            --space-8: 32px;
+            --space-10: 40px;
+            --space-12: 48px;
+            --space-16: 64px;
+
+            /* ===========================
+               Typography
+               =========================== */
+            --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', sans-serif;
+            --font-mono: 'SF Mono', 'Monaco', 'Cascadia Code', 'Consolas', monospace;
+
+            /* ===========================
+               Radius
+               =========================== */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+
+            /* ===========================
+               Shadows
+               =========================== */
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.25);
+            --shadow-green: 0 4px 16px rgba(16, 185, 129, 0.2);
+
+            /* ===========================
+               Transitions
+               =========================== */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* ===========================
+               Shoelace Overrides
+               =========================== */
+            --sl-color-primary-500: var(--color-orange-500);
+            --sl-color-primary-600: var(--color-orange-500);
+            --sl-color-neutral-0: var(--color-green-500);
+            --sl-color-neutral-50: var(--color-green-500);
+            --sl-color-neutral-100: var(--color-green-500);
+            --sl-color-neutral-300: var(--color-dark-700);
+            --sl-color-neutral-500: var(--color-dark-800);
+            --sl-color-neutral-700: var(--color-dark-900);
+            --sl-color-neutral-900: var(--color-black);
+            --sl-input-background-color: var(--color-dark-900);
+            --sl-input-background-color-hover: var(--color-dark-800);
+            --sl-input-background-color-focus: var(--color-dark-900);
+            --sl-input-border-color: var(--color-orange-300);
+            --sl-input-border-color-hover: var(--color-orange-500);
+            --sl-input-border-color-focus: var(--color-green-500);
+            --sl-input-color: var(--color-white);
+            --sl-input-placeholder-color: var(--color-gray-300);
+            --sl-input-focus-ring-color: var(--color-green-100);
+            --sl-input-height-medium: 44px;
+            --sl-panel-background-color: var(--color-dark-800);
+            --sl-panel-border-color: var(--color-orange-300);
+            --sl-overlay-background-color: rgba(10, 8, 7, 0.96);
+            --sl-border-radius-medium: var(--radius-md);
+        }
+
+        html {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: linear-gradient(180deg, var(--color-black) 0%, var(--color-dark-900) 100%);
+            color: var(--color-white);
+            min-height: 100vh;
+            padding: var(--space-16) var(--space-6);
+            line-height: 1.5;
+        }
+
+        /* ===========================
+           Layout
+           =========================== */
+        .container {
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        /* ===========================
+           Header
+           =========================== */
+        .header {
+            text-align: center;
+            margin-bottom: var(--space-16);
+        }
+
+        .title {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--color-orange-500);
+            margin-bottom: var(--space-2);
+            letter-spacing: -0.02em;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-1) var(--space-3);
+            background: var(--color-dark-800);
+            border: 1px solid var(--color-orange-300);
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--color-gray-200);
+        }
+
+        .header-badges {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            margin-top: var(--space-4);
+        }
+
+        .badge-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            background: var(--color-dark-800);
+            border: 1px solid var(--color-orange-300);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-gray-200);
+            text-decoration: none;
+            transition: all var(--transition-fast);
+        }
+
+        .badge-link:hover {
+            border-color: var(--color-orange-500);
+            background: var(--color-dark-700);
+            color: var(--color-white);
+            transform: translateY(-1px);
+        }
+
+        .badge-link svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .badge-link:hover svg {
+            fill: var(--color-white);
+        }
+
+        .subtitle {
+            font-size: 15px;
+            color: var(--color-gray-200);
+            font-weight: 400;
+        }
+
+        .custom-html-container {
+            margin-top: var(--space-3);
+            font-size: 15px;
+            color: var(--color-gray-200);
+        }
+
+        /* ===========================
+           Card
+           =========================== */
+        .card {
+            background: var(--color-dark-900);
+            border: 1px solid var(--color-orange-300);
+            border-radius: var(--radius-lg);
+            padding: var(--space-7);
+            margin-bottom: var(--space-5);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-6);
+        }
+
+        .card-indicator {
+            width: 6px;
+            height: 6px;
+            background: var(--color-orange-500);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--color-orange-500);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-white);
+            letter-spacing: -0.01em;
+        }
+
+        /* ===========================
+           Form
+           =========================== */
+        .form-field {
+            margin-bottom: var(--space-5);
+        }
+
+        .form-field:last-child {
+            margin-bottom: 0;
+        }
+
+        sl-select, sl-input {
+            width: 100%;
+        }
+
+        .field-help {
+            display: block;
+            margin-top: var(--space-2);
+            font-size: 12px;
+            color: var(--color-gray-300);
+            line-height: 1.4;
+        }
+
+        .field-help a {
+            color: var(--color-orange-500);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .field-help a:hover {
+            color: var(--color-green-500);
+        }
+
+        .field-label {
+            display: block;
+            margin-bottom: var(--space-2);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-gray-100);
+        }
+
+        /* ===========================
+           Input
+           =========================== */
+        .input-group {
+            display: flex;
+            gap: var(--space-2);
+        }
+
+        .input {
+            flex: 1;
+            height: var(--sl-input-height-medium);
+            padding: 0 var(--space-4);
+            background: var(--sl-input-background-color);
+            border: 1px solid var(--sl-input-border-color);
+            border-radius: var(--sl-border-radius-medium);
+            color: var(--sl-input-color);
+            font-size: 14px;
+            font-family: inherit;
+            transition: all var(--transition-fast);
+            outline: none !important;
+        }
+
+        .input:hover {
+            border-color: var(--sl-input-border-color-hover);
+            outline: none !important;
+        }
+
+        .input:focus {
+            border-color: var(--sl-input-border-color-focus);
+            box-shadow: 0 0 0 4px var(--sl-input-focus-ring-color) !important;
+            outline: none !important;
+        }
+
+        .input::placeholder {
+            color: var(--sl-input-placeholder-color);
+        }
+
+        .btn-add {
+            width: var(--sl-input-height-medium);
+            height: var(--sl-input-height-medium);
+            padding: 0;
+            background: var(--color-orange-500);
+            border: none;
+            border-radius: var(--sl-border-radius-medium);
+            color: var(--color-white);
+            font-size: 20px;
+            font-weight: 300;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            outline: none !important;
+        }
+
+        .btn-add:hover {
+            background: var(--color-orange-400);
+            transform: scale(1.05);
+        }
+
+        .btn-add:active {
+            transform: scale(0.95);
+        }
+
+        .btn-add:focus {
+            box-shadow: 0 0 0 4px var(--color-orange-100);
+        }
+
+        /* ===========================
+           Tags
+           =========================== */
+        .tags-wrapper {
+            min-height: var(--sl-input-height-medium);
+            padding: var(--space-2) var(--space-4);
+            display: flex;
+            align-items: center;
+            background: var(--sl-input-background-color);
+            border: 1px solid var(--sl-input-border-color);
+            border-radius: var(--sl-border-radius-medium);
+            margin-top: var(--space-2);
+            transition: border-color var(--transition-fast);
+        }
+
+        .tags-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            align-items: center;
+            width: 100%;
+        }
+
+        .tags-list:empty::before {
+            content: 'No excluded words';
+            color: var(--color-gray-300);
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            background: var(--color-green-500);
+            color: var(--color-white);
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .tag-remove {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--color-white);
+            font-size: 12px;
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .tag-remove:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ===========================
+           Button
+           =========================== */
+        .btn {
+            width: 100%;
+            height: 48px;
+            padding: 0 var(--space-6);
+            background: var(--color-green-500);
+            color: var(--color-white);
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            margin-top: var(--space-8);
+            box-shadow: var(--shadow-green);
+        }
+
+        .btn:hover {
+            background: var(--color-green-600);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ===========================
+           Result
+           =========================== */
+        .result {
+            display: none;
+            background: var(--color-dark-900);
+            border: 1px solid rgba(16, 185, 129, 0.24);
+            border-radius: var(--radius-lg);
+            padding: var(--space-7);
+            margin-top: var(--space-8);
+            box-shadow: var(--shadow-green);
+        }
+
+        .result-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-green-500);
+            margin-bottom: var(--space-4);
+        }
+
+        .result-url {
+            background: var(--color-black);
+            border: 1px solid rgba(16, 185, 129, 0.24);
+            border-radius: var(--radius-md);
+            padding: var(--space-4);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--color-gray-100);
+            word-break: break-all;
+            margin-bottom: var(--space-4);
+            line-height: 1.6;
+        }
+
+        .result-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-3);
+        }
+
+        /* ===========================
+           Alert
+           =========================== */
+        .alert {
+            position: fixed;
+            top: var(--space-6);
+            right: var(--space-6);
+            max-width: 400px;
+            padding: var(--space-4) var(--space-5);
+            background: var(--color-dark-800);
+            border: 1px solid var(--color-orange-500);
+            border-radius: var(--radius-md);
+            color: var(--color-white);
+            font-size: 14px;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-base);
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .alert.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        /* ===========================
+           Shoelace Customization
+           =========================== */
+        sl-select::part(combobox),
+        sl-input::part(base) {
+            background: var(--color-dark-900) !important;
+            border-color: var(--color-orange-300) !important;
+        }
+
+        sl-select::part(combobox):hover,
+        sl-input::part(base):hover {
+            border-color: var(--color-orange-500) !important;
+        }
+
+        sl-select::part(combobox):focus-within,
+        sl-input::part(base):focus-within {
+            border-color: var(--color-green-500) !important;
+            box-shadow: 0 0 0 4px var(--color-green-100) !important;
+        }
+
+        sl-select::part(listbox) {
+            background: var(--color-dark-800) !important;
+            border-color: var(--color-orange-300) !important;
+        }
+
+        sl-option::part(base) {
+            background: var(--color-dark-800) !important;
+            color: var(--color-white) !important;
+        }
+
+        sl-option::part(base):hover {
+            background: var(--color-orange-100) !important;
+        }
+
+        sl-option[aria-selected="true"]::part(base) {
+            background: var(--color-green-100) !important;
+        }
+
+        sl-option::part(checked-icon) {
+            color: var(--color-green-500) !important;
+        }
+
+        sl-select::part(tag__base) {
+            background: var(--color-green-500) !important;
+            color: var(--color-white) !important;
+            border: none !important;
+        }
+
+        sl-select::part(tag__remove-button) {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        sl-select::part(tag__remove-button):hover {
+            color: var(--color-white) !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+        }
+
+        sl-select::part(clear-button) {
+            color: var(--color-orange-500) !important;
+        }
+
+        sl-select::part(clear-button):hover {
+            color: var(--color-green-500) !important;
+        }
+
+        sl-button::part(base) {
+            background: var(--color-green-500) !important;
+            border: none !important;
+            color: var(--color-white) !important;
+            font-weight: 600 !important;
+            transition: all var(--transition-base) !important;
+        }
+
+        sl-button::part(base):hover {
+            background: var(--color-green-600) !important;
+        }
+
+        sl-button[variant="default"]::part(base) {
+            background: var(--color-dark-800) !important;
+            border: 1px solid var(--color-orange-300) !important;
+            color: var(--color-white) !important;
+        }
+
+        sl-button[variant="default"]::part(base):hover {
+            border-color: var(--color-orange-500) !important;
+            background: var(--color-dark-700) !important;
+        }
+
+        /* ===========================
+           Toggle
+           =========================== */
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            cursor: pointer;
+            user-select: none;
+            outline: none;
+        }
+
+        .toggle-wrapper:focus-visible .toggle {
+            box-shadow: 0 0 0 4px var(--color-green-100);
+        }
+
+        .toggle {
+            position: relative;
+            width: 40px;
+            height: 24px;
+            background: var(--color-dark-800);
+            border: 1px solid var(--color-orange-300);
+            border-radius: 12px;
+            transition: all var(--transition-base);
+            flex-shrink: 0;
+        }
+
+        .toggle::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: var(--color-gray-300);
+            border-radius: 50%;
+            transition: all var(--transition-base);
+        }
+
+        .toggle.active {
+            background: var(--color-green-500);
+            border-color: var(--color-green-500);
+        }
+
+        .toggle.active::before {
+            left: 18px;
+            background: var(--color-white);
+        }
+
+        .toggle-icon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            opacity: 0.5;
+            transition: opacity var(--transition-fast);
+        }
+
+        .toggle-icon.left {
+            left: 4px;
+        }
+
+        .toggle-icon.right {
+            right: 4px;
+        }
+
+        .toggle.active .toggle-icon.right {
+            opacity: 1;
+        }
+
+        .toggle:not(.active) .toggle-icon.left {
+            opacity: 0.3;
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            color: var(--color-white);
+        }
+
+        sl-input::part(input),
+        sl-select::part(display-input) {
+            color: var(--color-white) !important;
+        }
+
+        sl-input::part(form-control-label),
+        sl-select::part(form-control-label) {
+            color: var(--color-gray-100) !important;
+            font-weight: 500 !important;
+            font-size: 13px !important;
+        }
+
+        /* ===========================
+           Responsive
+           =========================== */
+        @media (max-width: 640px) {
+            body {
+                padding: var(--space-10) var(--space-4);
+            }
+
+            .card {
+                padding: var(--space-5);
+            }
+
+            .title {
+                font-size: 24px;
+            }
+
+            .result-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .alert {
+                left: var(--space-4);
+                right: var(--space-4);
+                max-width: none;
+            }
+        }
+
+        /* ===========================
+           Loading State
+           =========================== */
+        .loading {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* ===========================
+           Accessibility
+           =========================== */
+        *:focus-visible {
+            outline: 2px solid var(--color-green-500);
+            outline-offset: 2px;
+        }
+
+        sl-option:focus-visible {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">
+                {{ADDON_NAME}}
+                <span class="version-badge">v{{VERSION}}</span>
+            </h1>
+            <p class="subtitle">Stremio addon to convert DDL to streams via debrid services</p>
+            <div class="custom-html-container">{{CUSTOM_HTML}}</div>
+            <div class="header-badges">
+                <a href="https://github.com/Dyhlio/wastream" target="_blank" rel="noopener" class="badge-link">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    GitHub
+                </a>
+                <a href="https://buymeacoffee.com/dyhlio" target="_blank" rel="noopener" class="badge-link">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20.216 6.415l-.132-.666c-.119-.598-.388-1.163-1.001-1.379-.197-.069-.42-.098-.57-.241-.152-.143-.196-.366-.231-.572-.065-.378-.125-.756-.192-1.133-.057-.325-.102-.69-.25-.987-.195-.4-.597-.634-.996-.788a5.723 5.723 0 00-.626-.194c-1-.263-2.05-.36-3.077-.416a25.834 25.834 0 00-3.7.062c-.915.083-1.88.184-2.75.5-.318.116-.646.256-.888.501-.297.302-.393.77-.177 1.146.154.267.415.456.692.58.36.162.737.284 1.123.366 1.075.238 2.189.331 3.287.37 1.218.05 2.437.01 3.65-.118.299-.033.598-.073.896-.119.352-.054.578-.513.474-.834-.124-.383-.457-.531-.834-.473-.466.074-.96.108-1.382.146-1.177.08-2.358.082-3.536.006a22.228 22.228 0 01-1.157-.107c-.086-.01-.18-.025-.258-.036-.243-.036-.484-.08-.724-.13-.111-.027-.111-.185 0-.212h.005c.277-.06.557-.108.838-.147h.002c.131-.009.263-.032.394-.048a25.076 25.076 0 013.426-.12c.674.019 1.347.067 2.017.144l.228.031c.267.04.533.088.798.145.392.085.895.113 1.07.542.055.137.08.288.111.431l.319 1.484a.237.237 0 01-.199.284h-.003c-.037.006-.075.01-.112.015a36.704 36.704 0 01-4.743.295 37.059 37.059 0 01-4.699-.304c-.14-.017-.293-.042-.417-.06-.326-.048-.649-.108-.973-.161-.393-.065-.768-.032-1.123.161-.29.16-.527.404-.675.701-.154.316-.199.66-.267 1-.069.34-.176.707-.135 1.056.087.753.613 1.365 1.37 1.502a39.69 39.69 0 0011.343.376.483.483 0 01.535.53l-.071.697-1.018 9.907c-.041.41-.047.832-.125 1.237-.122.637-.553 1.028-1.182 1.171-.577.131-1.165.2-1.756.205-.656.004-1.31-.025-1.966-.022-.699.004-1.556-.06-2.095-.58-.475-.458-.54-1.174-.605-1.793l-.731-7.013-.322-3.094c-.037-.351-.286-.695-.678-.678-.336.015-.718.3-.678.679l.228 2.185.949 9.112c.147 1.344 1.174 2.068 2.446 2.272.742.12 1.503.144 2.257.156.966.016 1.942.053 2.892-.122 1.408-.258 2.465-1.198 2.616-2.657.34-3.332.683-6.663 1.024-9.995l.215-2.087a.484.484 0 01.39-.426c.402-.078.787-.212 1.074-.518.455-.488.546-1.124.385-1.766zm-1.478.772c-.145.137-.363.201-.578.233-2.416.359-4.866.54-7.308.46-1.748-.06-3.477-.254-5.207-.498-.17-.024-.353-.055-.47-.18-.22-.236-.111-.71-.054-.995.052-.26.152-.609.463-.646.484-.057 1.046.148 1.526.22.577.088 1.156.177 1.735.261a34.01 34.01 0 007.358.048c.583-.077 1.175-.158 1.746-.283.191-.043.383-.089.578-.133.293-.067.461-.233.525-.532.064-.298-.077-.639-.356-.777-.859-.429-1.932-.386-2.916-.386-1.214 0-2.429.041-3.64.115a38.265 38.265 0 00-3.602.377c-.344.053-.686.115-1.027.189-.543.117-.935.385-.935.973 0 .504.312.813.811.97.424.133.867.192 1.305.247 1.408.177 2.828.281 4.246.32 3.015.084 6.034-.015 9.04-.339.15-.016.293-.036.434-.05.119-.013.215-.046.215-.19 0-.08-.05-.15-.123-.189-.023-.01-.05-.015-.076-.023z"/>
+                    </svg>
+                    Buy me a coffee
+                </a>
+            </div>
+        </header>
+
+        <main>
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-indicator"></div>
+                    <h2 class="card-title">Languages</h2>
+                </div>
+                <div class="form-field">
+                    <sl-select id="languageSelect" multiple clearable label="Preferred languages" placeholder="Select languages"></sl-select>
+                    <span class="field-help">Leave empty to display all languages</span>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-indicator"></div>
+                    <h2 class="card-title">Quality</h2>
+                </div>
+                <div class="form-field">
+                    <sl-select id="resolutionSelect" multiple clearable label="Resolutions" placeholder="Select resolutions"></sl-select>
+                    <span class="field-help">All resolutions by default</span>
+                </div>
+                <div class="form-field">
+                    <sl-input id="maxResults" type="number" label="Max results per resolution" value="0" min="0" placeholder="0 = unlimited"></sl-input>
+                    <span class="field-help">Maximum number of results (0 = unlimited)</span>
+                </div>
+                <div class="form-field">
+                    <sl-input id="maxSize" type="number" label="Max size (GB)" value="0" min="0" step="0.1" placeholder="0 = no limit"></sl-input>
+                    <span class="field-help">Maximum file size (0 = no limit)</span>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-indicator"></div>
+                    <h2 class="card-title">Service</h2>
+                </div>
+                <div class="form-field">
+                    <sl-select id="debridService" label="Debrid service" value="alldebrid">
+                        <sl-option value="alldebrid">AllDebrid</sl-option>
+                        <sl-option value="torbox">TorBox</sl-option>
+                    </sl-select>
+                </div>
+                <div class="form-field">
+                    <sl-input id="debridKey" type="text" label="Debrid API Key" placeholder="Your API key"></sl-input>
+                    <span class="field-help">API Key: <a href="https://alldebrid.com/apikeys" target="_blank" rel="noopener" id="debridLink">alldebrid.com/apikeys</a></span>
+                </div>
+                <div class="form-field">
+                    <sl-input id="tmdbToken" type="text" label="TMDB Token" placeholder="Your TMDB token"></sl-input>
+                    <span class="field-help">Token: <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">themoviedb.org/settings/api</a></span>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-indicator"></div>
+                    <h2 class="card-title">Advanced</h2>
+                </div>
+                <div class="form-field">
+                    <sl-input id="timeout" type="number" label="Timeout (seconds)" value="20" min="5" max="120"></sl-input>
+                    <span class="field-help">Maximum search time (default: 20s)</span>
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Excluded keywords</label>
+                    <div class="input-group">
+                        <input type="text" id="excludedInput" class="input" placeholder="Type a word to exclude" autocomplete="off" />
+                        <button type="button" class="btn-add" id="addBtn" aria-label="Add word">+</button>
+                    </div>
+                    <div class="tags-wrapper">
+                        <div id="excludedTags" class="tags-list"></div>
+                    </div>
+                    <span class="field-help">Streams with these words will be filtered</span>
+                </div>
+                <div class="form-field">
+                    <div class="toggle-wrapper" id="cachedToggle">
+                        <div class="toggle" id="cachedToggleBtn">
+                            <svg class="toggle-icon left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            <svg class="toggle-icon right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                            </svg>
+                        </div>
+                        <span class="toggle-label">Instant links only</span>
+                    </div>
+                    <input type="checkbox" id="showOnlyCached" style="display: none;" />
+                </div>
+            </section>
+
+            <section class="card" id="passwordSection" style="display: none;">
+                <div class="card-header">
+                    <div class="card-indicator"></div>
+                    <h2 class="card-title">Security</h2>
+                </div>
+                <div class="form-field">
+                    <sl-input id="password" type="password" label="Password" placeholder="Password required"></sl-input>
+                    <span class="field-help">Required to generate configuration</span>
+                </div>
+            </section>
+
+            <button class="btn" id="generateBtn">Generate link</button>
+
+            <div id="result" class="result" role="status" aria-live="polite">
+                <div class="result-title">✓ Configuration created successfully</div>
+                <div id="addonLink" class="result-url"></div>
+                <div class="result-actions">
+                    <sl-button variant="default" id="copyBtn">Copy</sl-button>
+                    <sl-button variant="primary" id="openBtn">Open Stremio</sl-button>
+                </div>
+            </div>
+
+        </main>
+
+        <div id="alert" class="alert" role="alert" aria-live="assertive"></div>
+    </div>
+
+    <script type="module">
+        'use strict';
+
+        // ===========================
+        // State
+        // ===========================
+        const state = {
+            excludedKeywords: [],
+            passwordRequired: false,
+            loading: false
+        };
+
+        // ===========================
+        // DOM Cache
+        // ===========================
+        const els = {
+            languageSelect: null,
+            resolutionSelect: null,
+            maxResults: null,
+            maxSize: null,
+            debridService: null,
+            debridKey: null,
+            tmdbToken: null,
+            password: null,
+            timeout: null,
+            excludedInput: null,
+            excludedTags: null,
+            addBtn: null,
+            showOnlyCached: null,
+            cachedToggle: null,
+            cachedToggleBtn: null,
+            passwordSection: null,
+            generateBtn: null,
+            result: null,
+            addonLink: null,
+            copyBtn: null,
+            openBtn: null,
+            debridLink: null,
+            alert: null
+        };
+
+        // ===========================
+        // Utils
+        // ===========================
+        const showAlert = (message, duration = 3000) => {
+            els.alert.textContent = message;
+            els.alert.classList.add('show');
+            setTimeout(() => els.alert.classList.remove('show'), duration);
+        };
+
+        const setLoading = (loading) => {
+            state.loading = loading;
+            els.generateBtn.disabled = loading;
+            els.generateBtn.classList.toggle('loading', loading);
+        };
+
+        // ===========================
+        // Tags Management
+        // ===========================
+        const renderTags = () => {
+            els.excludedTags.innerHTML = '';
+
+            state.excludedKeywords.forEach(word => {
+                const tag = document.createElement('div');
+                tag.className = 'tag';
+
+                const span = document.createElement('span');
+                span.textContent = word;
+
+                const button = document.createElement('button');
+                button.className = 'tag-remove';
+                button.textContent = '×';
+                button.setAttribute('aria-label', `Remove ${word}`);
+                button.addEventListener('click', () => removeTag(word));
+
+                tag.appendChild(span);
+                tag.appendChild(button);
+                els.excludedTags.appendChild(tag);
+            });
+        };
+
+        const addTag = (word) => {
+            const sanitized = word.trim().toLowerCase();
+            if (!sanitized || state.excludedKeywords.includes(sanitized)) return;
+
+            state.excludedKeywords.push(sanitized);
+            renderTags();
+        };
+
+        const removeTag = (word) => {
+            state.excludedKeywords = state.excludedKeywords.filter(k => k !== word);
+            renderTags();
+        };
+
+        // ===========================
+        // API
+        // ===========================
+        const loadOptions = async () => {
+            try {
+                const [langRes, resRes, pwdRes] = await Promise.all([
+                    fetch('/available/languages'),
+                    fetch('/available/resolutions'),
+                    fetch('/password-config')
+                ]);
+
+                const [langData, resData, pwdData] = await Promise.all([
+                    langRes.json(),
+                    resRes.json(),
+                    pwdRes.json()
+                ]);
+
+                langData.languages.forEach(lang => {
+                    const opt = document.createElement('sl-option');
+                    opt.value = lang.replace(/\s+/g, '_');
+                    opt.textContent = lang;
+                    els.languageSelect.appendChild(opt);
+                });
+
+                resData.resolutions.forEach(res => {
+                    const opt = document.createElement('sl-option');
+                    opt.value = res;
+                    opt.textContent = res;
+                    els.resolutionSelect.appendChild(opt);
+                });
+                els.resolutionSelect.value = resData.resolutions;
+
+                state.passwordRequired = pwdData.password_required;
+                if (state.passwordRequired) {
+                    els.passwordSection.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading options:', error);
+                showAlert('Error loading options');
+            }
+        };
+
+        const generateLink = async () => {
+            const debridService = els.debridService.value;
+            const debridKey = els.debridKey.value.trim();
+            const tmdbToken = els.tmdbToken.value.trim();
+            const password = els.password.value.trim();
+
+            if (!debridKey || !tmdbToken) {
+                showAlert('API keys required');
+                return;
+            }
+
+            if (state.passwordRequired && !password) {
+                showAlert('Password required');
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                if (state.passwordRequired) {
+                    const res = await fetch(`/verify-password?password=${encodeURIComponent(password)}`, {
+                        method: 'POST'
+                    });
+                    const data = await res.json();
+
+                    if (!data.valid) {
+                        showAlert('Incorrect password');
+                        setLoading(false);
+                        return;
+                    }
+                }
+
+                const selectedLanguages = (els.languageSelect.value || []).map(lang => lang.replace(/_/g, ' '));
+
+                const config = {
+                    debrid_service: debridService,
+                    debrid_api_key: debridKey,
+                    tmdb_api_token: tmdbToken,
+                    languages: selectedLanguages,
+                    resolutions: els.resolutionSelect.value || [],
+                    max_results_per_resolution: parseInt(els.maxResults.value) || 0,
+                    max_size_gb: parseFloat(els.maxSize.value) || 0,
+                    stream_request_timeout: parseInt(els.timeout.value) || 20,
+                    show_only_cached: els.showOnlyCached.checked,
+                    excluded_keywords: state.excludedKeywords
+                };
+
+                const url = `${window.location.protocol}//${window.location.host}/${btoa(JSON.stringify(config))}/manifest.json`;
+
+                els.addonLink.textContent = url;
+                els.result.style.display = 'block';
+                els.result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (error) {
+                console.error('Error generating link:', error);
+                showAlert('Error generating link');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const copyLink = async () => {
+            try {
+                await navigator.clipboard.writeText(els.addonLink.textContent);
+                showAlert('Link copied!');
+            } catch (error) {
+                console.error('Error copying:', error);
+                showAlert('Error copying');
+            }
+        };
+
+        const openStremio = () => {
+            const url = els.addonLink.textContent.replace(/^https?:\/\//, '');
+            window.open(`stremio://${url}`, '_blank');
+        };
+
+        // ===========================
+        // Events
+        // ===========================
+        const attachEvents = () => {
+            const handleAddTag = () => {
+                addTag(els.excludedInput.value);
+                els.excludedInput.value = '';
+            };
+
+            els.excludedInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddTag();
+                }
+            });
+
+            els.addBtn.addEventListener('click', handleAddTag);
+
+            els.cachedToggle.addEventListener('click', () => {
+                els.showOnlyCached.checked = !els.showOnlyCached.checked;
+                els.cachedToggleBtn.classList.toggle('active', els.showOnlyCached.checked);
+            });
+
+            els.debridService.addEventListener('sl-change', (e) => {
+                const isTorbox = e.target.value === 'torbox';
+                els.debridLink.href = isTorbox ? 'https://torbox.app/settings' : 'https://alldebrid.com/apikeys';
+                els.debridLink.textContent = isTorbox ? 'torbox.app/settings' : 'alldebrid.com/apikeys';
+            });
+
+            els.generateBtn.addEventListener('click', generateLink);
+            els.copyBtn.addEventListener('click', copyLink);
+            els.openBtn.addEventListener('click', openStremio);
+        };
+
+        // ===========================
+        // Configuration Loading
+        // ===========================
+        const loadExistingConfig = () => {
+            const path = window.location.pathname;
+            const match = path.match(/^\/([^\/]+)\/configure$/);
+
+            if (!match) return;
+
+            try {
+                const b64config = match[1];
+                const decoded = atob(b64config);
+                const config = JSON.parse(decoded);
+
+                if (config.debrid_service) els.debridService.value = config.debrid_service;
+                if (config.debrid_api_key) els.debridKey.value = config.debrid_api_key;
+                if (config.tmdb_api_token) els.tmdbToken.value = config.tmdb_api_token;
+                if (config.timeout) els.timeout.value = config.timeout;
+                if (config.max_results_per_resolution) els.maxResults.value = config.max_results_per_resolution;
+                if (config.max_size_gb) els.maxSize.value = config.max_size_gb;
+                if (config.show_only_cached) {
+                    els.showOnlyCached.checked = true;
+                    els.cachedToggleBtn.classList.add('active');
+                }
+
+                if (config.languages && config.languages.length > 0) {
+                    const encodedLanguages = config.languages.map(lang => lang.replace(/\s+/g, '_'));
+                    els.languageSelect.value = encodedLanguages;
+                }
+
+                if (config.resolutions && config.resolutions.length > 0) {
+                    els.resolutionSelect.value = config.resolutions;
+                }
+
+                if (config.excluded_keywords && Array.isArray(config.excluded_keywords)) {
+                    state.excludedKeywords = [...config.excluded_keywords];
+                    renderTags();
+                }
+
+                showAlert('Configuration loaded successfully', 2000);
+            } catch (error) {
+                console.error('Error loading configuration:', error);
+            }
+        };
+
+        // ===========================
+        // Initialization
+        // ===========================
+        const init = async () => {
+            Object.keys(els).forEach(key => {
+                const el = document.getElementById(key);
+                if (el) els[key] = el;
+            });
+
+            await Promise.allSettled([
+                customElements.whenDefined('sl-select'),
+                customElements.whenDefined('sl-input'),
+                customElements.whenDefined('sl-button'),
+                customElements.whenDefined('sl-option')
+            ]);
+
+            attachEvents();
+            await loadOptions();
+            loadExistingConfig();
+        };
+
+        // ===========================
+        // Start Application
+        // ===========================
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
