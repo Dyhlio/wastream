@@ -37,7 +37,7 @@ def validate_config(config_base64: Optional[str]) -> Optional[Dict[str, str]]:
             api_logger.debug("Missing or empty debrid_api_key")
             return None
 
-        if config_dict["debrid_service"] not in ["alldebrid", "torbox"]:
+        if config_dict["debrid_service"] not in ["alldebrid", "torbox", "premiumize"]:
             api_logger.debug(f"Invalid debrid_service: {config_dict['debrid_service']}")
             return None
 

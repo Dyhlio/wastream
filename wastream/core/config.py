@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     # ===========================
     # AllDebrid Configuration
     # ===========================
-    ALLDEBRID_API_URL: str = "https://apislow.alldebrid.com/v4"
+    ALLDEBRID_API_URL: str = "https://api.alldebrid.com/v4"
     ALLDEBRID_BATCH_SIZE: int = 12
     ALLDEBRID_SUPPORTED_HOSTS: List[str] = ["1fichier", "turbobit", "rapidgator"]
     ALLDEBRID_SUPPORTED_SOURCES: List[str] = ["wawacity", "darki-api"]
@@ -86,6 +86,13 @@ class Settings(BaseSettings):
     TORBOX_API_URL: str = "https://api.torbox.app/v1/api"
     TORBOX_SUPPORTED_HOSTS: List[str] = ["1fichier", "turbobit", "rapidgator", "dailyuploads", "sendcm", "darkibox"]
     TORBOX_SUPPORTED_SOURCES: List[str] = ["darki-api"]
+
+    # ===========================
+    # Premiumize Configuration
+    # ===========================
+    PREMIUMIZE_API_URL: str = "https://www.premiumize.me/api"
+    PREMIUMIZE_SUPPORTED_HOSTS: List[str] = ["1fichier", "turbobit", "rapidgator", "dailyuploads"]
+    PREMIUMIZE_SUPPORTED_SOURCES: List[str] = ["darki-api"]
 
     # ===========================
     # TMDB Configuration
@@ -149,7 +156,7 @@ class Settings(BaseSettings):
         return {
             "id": self.ADDON_ID,
             "name": self.ADDON_NAME,
-            "version": "2.2.0",
+            "version": "2.3.0",
             "description": "Stremio addon to convert DDL to streams via debrid services",
             "catalogs": [],
             "resources": ["stream"],

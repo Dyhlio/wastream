@@ -101,6 +101,27 @@ def filter_by_max_size(results: List[Dict], max_size_gb: float) -> List[Dict]:
     return filtered_results
 
 # ===========================
+# Archive Files Filtering
+# ===========================
+def filter_archive_files(streams: List[Dict]) -> List[Dict]:
+    archive_extensions = ('.rar', '.zip', '.7z', '.tar', '.gz')
+    filtered_streams = []
+
+    for stream in streams:
+        stream_desc = stream.get("description", "")
+
+        is_archive = False
+        if "📁" in stream_desc:
+            filename_part = stream_desc.split("📁")[-1].strip().lower()
+            is_archive = any(filename_part.endswith(ext) for ext in archive_extensions)
+
+        if not is_archive:
+            filtered_streams.append(stream)
+
+    stream_logger.debug(f"Archive filter: {len(streams)} → {len(filtered_streams)}")
+    return filtered_streams
+
+# ===========================
 # Excluded Keywords Filtering
 # ===========================
 def filter_excluded_keywords(streams: List[Dict], excluded_keywords: List[str]) -> List[Dict]:

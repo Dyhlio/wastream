@@ -63,12 +63,8 @@ class BaseWawacity:
                 if result:
                     return result
         
-        if content_type == "films":
-            content_name = "movie"
-        elif content_type == "series":
-            content_name = "series"
-        else:
-            content_name = "anime"
+        content_name_mapping = {"movies": "movie", "films": "movie", "series": "series", "anime": "anime", "mangas": "anime"}
+        content_name = content_name_mapping.get(content_type, "content")
         scraper_logger.debug(f"[Wawacity] No {content_name} found for any title variants of '{title}'")
         return None
     
@@ -79,8 +75,11 @@ class BaseWawacity:
 
         content_type = metadata.get("content_type", default_content_type) if metadata else default_content_type
 
+        wawacity_content_type_mapping = {"movies": "films", "series": "series", "anime": "mangas"}
+        wawacity_content_type = wawacity_content_type_mapping.get(content_type, content_type)
+
         encoded_title = quote_url_param(str(search_title)[:WAWACITY_SEARCH_MAX_LENGTH])
-        search_url = f"{settings.WAWACITY_URL}/?p={content_type}&search={encoded_title}"
+        search_url = f"{settings.WAWACITY_URL}/?p={wawacity_content_type}&search={encoded_title}"
         if year:
             search_url += f"&year={str(year)}"
         
@@ -91,11 +90,11 @@ class BaseWawacity:
             if response.status_code != 200:
                 scraper_logger.debug(f"Search failed: {response.status_code}")
                 return None
-            
+
             parser = HTMLParser(response.text)
-            if content_type == "films":
+            if wawacity_content_type == "films":
                 css_selector = 'a[href^="?p=film&id="]'
-            elif content_type == "series":
+            elif wawacity_content_type == "series":
                 css_selector = 'a[href^="?p=serie&id="]'
             else:
                 css_selector = 'a[href^="?p=manga&id="]'
@@ -141,12 +140,8 @@ class BaseWawacity:
 
                 if result:
                     tmdb_title = metadata.get("titles", [search_title])[0].title() if metadata.get("titles") else search_title.title()
-                    if content_type == "films":
-                        content_name = "movie"
-                    elif content_type == "series":
-                        content_name = "series"
-                    else:
-                        content_name = "anime"
+                    content_name_mapping = {"movies": "movie", "films": "movie", "series": "series", "anime": "anime", "mangas": "anime"}
+                    content_name = content_name_mapping.get(content_type, "content")
                     scraper_logger.debug(f"Found match: {content_title} (link: {content['link']})")
                     scraper_logger.debug(f"[Wawacity] Found {content_name}: '{tmdb_title}'")
                     return {
@@ -173,8 +168,11 @@ class BaseWawacity:
             return None
 
         try:
+            wawacity_content_type_mapping = {"movies": "films", "series": "series", "anime": "mangas"}
+            wawacity_content_type = wawacity_content_type_mapping.get(content_type, content_type)
+
             encoded_title = quote_url_param(str(search_title)[:WAWACITY_SEARCH_MAX_LENGTH])
-            search_url = f"{settings.WAWACITY_URL}/?p={content_type}&search={encoded_title}&page={page_num}"
+            search_url = f"{settings.WAWACITY_URL}/?p={wawacity_content_type}&search={encoded_title}&page={page_num}"
             if year:
                 search_url += f"&year={str(year)}"
             
@@ -183,11 +181,11 @@ class BaseWawacity:
             response = await http_client.get(search_url)
             if response.status_code != 200:
                 return None
-            
+
             parser = HTMLParser(response.text)
-            if content_type == "films":
+            if wawacity_content_type == "films":
                 css_selector = 'a[href^="?p=film&id="]'
-            elif content_type == "series":
+            elif wawacity_content_type == "series":
                 css_selector = 'a[href^="?p=serie&id="]'
             else:
                 css_selector = 'a[href^="?p=manga&id="]'
@@ -208,12 +206,8 @@ class BaseWawacity:
 
                 if result:
                     tmdb_title = metadata.get("titles", [search_title])[0].title() if metadata and metadata.get("titles") else search_title.title()
-                    if content_type == "films":
-                        content_name = "movie"
-                    elif content_type == "series":
-                        content_name = "series"
-                    else:
-                        content_name = "anime"
+                    content_name_mapping = {"movies": "movie", "films": "movie", "series": "series", "anime": "anime", "mangas": "anime"}
+                    content_name = content_name_mapping.get(content_type, "content")
                     scraper_logger.debug(f"Found match on page {page_num}: {content_title}")
                     scraper_logger.debug(f"[Wawacity] Found {content_name} on page {page_num}: '{tmdb_title}'")
                     return {
@@ -285,7 +279,7 @@ class BaseWawacity:
     
     async def search_content(self, title: str, year: Optional[str] = None,
                            metadata: Optional[Dict] = None, content_type: str = "films") -> List[Dict]:
-        content_names = {"films": "movie", "series": "series", "mangas": "anime"}
+        content_names = {"films": "movie", "movies": "movie", "series": "series", "mangas": "anime", "anime": "anime"}
         content_name = content_names.get(content_type, "content")
 
         try:
@@ -294,7 +288,7 @@ class BaseWawacity:
                 scraper_logger.debug(f"{content_name.title()} not found")
                 return []
 
-            if content_type == "films":
+            if content_names.get(content_type) == "movie":
                 results = await self._extract_movie_content(search_result, title, year)
             else:
                 results = await self._extract_series_content(search_result, title, year)
@@ -462,7 +456,8 @@ class BaseWawacity:
                                     "source": "Wawacity",
                                     "hoster": hoster_name.title(),
                                     "size": file_size,
-                                    "display_name": original_filename
+                                    "display_name": original_filename,
+                                    "model_type": "link"
                                 }
                             else:
                                 content_info = parse_series_info(decoded_filename)
@@ -485,7 +480,8 @@ class BaseWawacity:
                                     "source": "Wawacity",
                                     "hoster": hoster_name.title(),
                                     "size": file_size,
-                                    "display_name": display_name
+                                    "display_name": display_name,
+                                    "model_type": "link"
                                 }
 
                             page_results.append(result)

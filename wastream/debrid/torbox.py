@@ -8,6 +8,7 @@ from wastream.core.config import settings
 from wastream.debrid.base import BaseDebridService, HTTP_RETRY_ERRORS
 from wastream.utils.http_client import http_client
 from wastream.utils.logger import debrid_logger, cache_logger
+from wastream.utils.quality import quality_sort_key
 
 # ===========================
 # TorBox Error Constants
@@ -75,16 +76,22 @@ class TorBoxService(BaseDebridService):
             "Authorization": f"Bearer {api_key}"
         }
 
-    async def check_cache_single_link(self, link: str, link_hash: str, api_key: str) -> Dict:
+    async def check_cache_single_link(self, link: str, link_hash: str, api_key: str, download_type: str = "webdl", result: Optional[Dict] = None) -> Dict:
         http_error_count = 0
+
+        check_endpoint = "usenet/checkcached" if download_type == "usenet" else "webdl/checkcached"
 
         while True:
             try:
                 headers = self._get_headers(api_key)
 
+                params = {"hash": [link_hash], "format": "object"}
+                if download_type == "usenet":
+                    params["list_files"] = "true"
+
                 response = await http_client.get(
-                    f"{self.API_URL}/webdl/checkcached",
-                    params={"hash": [link_hash], "format": "object"},
+                    f"{self.API_URL}/{check_endpoint}",
+                    params=params,
                     headers=headers,
                     timeout=settings.DEBRID_CACHE_CHECK_HTTP_TIMEOUT
                 )
@@ -118,7 +125,29 @@ class TorBoxService(BaseDebridService):
                     cached_info = cache_data[link_hash]
 
                     if cached_info and isinstance(cached_info, dict):
-                        filename = cached_info.get("name")
+                        filename = None
+
+                        if download_type == "usenet" and "files" in cached_info:
+                            files = cached_info.get("files", [])
+                            if files:
+                                selected_file = None
+
+                                if result and result.get("season") and result.get("episode"):
+                                    try:
+                                        pattern = f"S{int(result.get('season')):02d}E{int(result.get('episode')):02d}"
+                                        matching_files = [f for f in files if pattern.upper() in f.get("short_name", "").upper()]
+                                        if matching_files:
+                                            selected_file = max(matching_files, key=lambda f: f.get("size", 0))
+                                    except (ValueError, TypeError):
+                                        pass
+
+                                if not selected_file:
+                                    selected_file = max(files, key=lambda f: f.get("size", 0))
+
+                                filename = selected_file.get("short_name")
+                        else:
+                            filename = cached_info.get("name")
+
                         return {
                             "status": "cached",
                             "original_link": link,
@@ -133,11 +162,12 @@ class TorBoxService(BaseDebridService):
                 debrid_logger.error(f"Cache check error: {type(e).__name__}")
                 return {"status": "uncached", "original_link": link, "hash": link_hash}
 
-    async def check_cache_batch(self, links: List[Dict], api_key: str, config: Dict) -> List[Dict]:
+    async def check_cache_batch(self, links: List[Dict], api_key: str, config: Dict, download_type: str = "webdl", user_season: Optional[str] = None, user_episode: Optional[str] = None) -> List[Dict]:
         if not links or not api_key:
             return links
 
         cache_timeout = config.get("stream_request_timeout", settings.STREAM_REQUEST_TIMEOUT)
+        check_endpoint = "usenet/checkcached" if download_type == "usenet" else "webdl/checkcached"
 
         cache_logger.debug(f"Checking {len(links)} links (timeout: {cache_timeout}s)")
         start_time = time.time()
@@ -147,7 +177,12 @@ class TorBoxService(BaseDebridService):
         for link_dict in links:
             link = link_dict.get("link")
             if link:
-                link_hash = self._calculate_hash(link)
+                if download_type == "usenet":
+                    nzb_id = link.split("/")[-1]
+                    download_url = f"{settings.DARKI_API_URL}/nzb/{nzb_id}/download"
+                    link_hash = hashlib.md5(download_url.encode()).hexdigest()
+                else:
+                    link_hash = self._calculate_hash(link)
                 link_to_hash[link] = link_hash
                 hashes.append(link_hash)
 
@@ -161,9 +196,13 @@ class TorBoxService(BaseDebridService):
             try:
                 headers = self._get_headers(api_key)
 
+                params = {"hash": hashes, "format": "object"}
+                if download_type == "usenet":
+                    params["list_files"] = "true"
+
                 response = await http_client.get(
-                    f"{self.API_URL}/webdl/checkcached",
-                    params={"hash": hashes, "format": "object"},
+                    f"{self.API_URL}/{check_endpoint}",
+                    params=params,
                     headers=headers,
                     timeout=cache_timeout
                 )
@@ -198,7 +237,33 @@ class TorBoxService(BaseDebridService):
                         if cached_info and isinstance(cached_info, dict):
                             link_dict["cache_status"] = "cached"
                             link_dict["cached_data"] = cached_info
-                            link_dict["debrid_filename"] = cached_info.get("name")
+
+                            filename = None
+
+                            if download_type == "usenet" and "files" in cached_info:
+                                files = cached_info.get("files", [])
+                                if files:
+                                    selected_file = None
+                                    check_season = user_season if user_season else link_dict.get("season")
+                                    check_episode = user_episode if user_episode else link_dict.get("episode")
+
+                                    if check_episode and check_season:
+                                        try:
+                                            pattern = f"S{int(check_season):02d}E{int(check_episode):02d}"
+                                            matching_files = [f for f in files if pattern.upper() in f.get("short_name", "").upper()]
+                                            if matching_files:
+                                                selected_file = max(matching_files, key=lambda f: f.get("size", 0))
+                                        except (ValueError, TypeError):
+                                            pass
+
+                                    if not selected_file:
+                                        selected_file = max(files, key=lambda f: f.get("size", 0))
+
+                                    filename = selected_file.get("short_name")
+                            else:
+                                filename = cached_info.get("name")
+
+                            link_dict["debrid_filename"] = filename
                         else:
                             link_dict["cache_status"] = "uncached"
                     else:
@@ -218,9 +283,7 @@ class TorBoxService(BaseDebridService):
 
         return links
 
-    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float) -> List[Dict]:
-        from wastream.utils.quality import quality_sort_key
-
+    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float, user_season: Optional[str] = None, user_episode: Optional[str] = None) -> List[Dict]:
         start_time = time.time()
 
         if not api_key or not results:
@@ -228,26 +291,40 @@ class TorBoxService(BaseDebridService):
                 result["cache_status"] = "uncached"
             return results
 
+        enable_nzb = config.get("enable_nzb", False)
+
         initial_count = len(results)
         filtered_results = []
+        nzb_results = []
+
         for result in results:
-            hoster = result.get("hoster", "").lower()
-            if any(supported_host in hoster for supported_host in settings.TORBOX_SUPPORTED_HOSTS):
-                filtered_results.append(result)
+            if result.get("model_type") == "nzb":
+                if enable_nzb:
+                    nzb_results.append(result)
+            else:
+                hoster = result.get("hoster", "").lower()
+                if any(supported_host in hoster for supported_host in settings.TORBOX_SUPPORTED_HOSTS):
+                    filtered_results.append(result)
 
-        if len(filtered_results) < initial_count:
-            debrid_logger.debug(f"Filtered: {initial_count} → {len(filtered_results)} links")
+        if len(filtered_results) + len(nzb_results) < initial_count:
+            debrid_logger.debug(f"Filtered: {initial_count} → {len(filtered_results)} DDL + {len(nzb_results)} NZB")
 
-        if not filtered_results:
-            debrid_logger.debug("No supported hosts")
+        if not filtered_results and not nzb_results:
+            debrid_logger.debug("No supported hosts or NZB")
             return []
 
-        results = filtered_results
-
         cache_timeout = max(0, timeout_remaining)
-        config = {**config, "stream_request_timeout": cache_timeout}
+        config_with_timeout = {**config, "stream_request_timeout": cache_timeout}
 
-        checked_results = await self.check_cache_batch(results, api_key, config)
+        ddl_checked = []
+        if filtered_results:
+            ddl_checked = await self.check_cache_batch(filtered_results, api_key, config_with_timeout, download_type="webdl", user_season=user_season, user_episode=user_episode)
+
+        nzb_checked = []
+        if nzb_results:
+            nzb_checked = await self.check_cache_batch(nzb_results, api_key, config_with_timeout, download_type="usenet", user_season=user_season, user_episode=user_episode)
+
+        checked_results = ddl_checked + nzb_checked
 
         groups = self.group_identical_links(checked_results)
 
@@ -288,15 +365,19 @@ class TorBoxService(BaseDebridService):
 
         return all_visible
 
-    async def _create_webdownload_with_retry(self, cleaned_link: str, headers: Dict, http_error_count: int, return_web_id: bool = True):
+    async def _create_download_with_retry(self, link: str, headers: Dict, http_error_count: int, return_id: bool = True, download_type: str = "webdl"):
+        create_endpoint = "usenet/createusenetdownload" if download_type == "usenet" else "webdl/createwebdownload"
+        id_key = "usenetdownload_id" if download_type == "usenet" else "webdownload_id"
+
         for attempt in range(settings.DEBRID_MAX_RETRIES):
             try:
+                data_payload = {"link": link}
+                if download_type == "webdl":
+                    data_payload["add_only_if_cached"] = False
+
                 create_response = await http_client.post(
-                    f"{self.API_URL}/webdl/createwebdownload",
-                    data={
-                        "link": cleaned_link,
-                        "add_only_if_cached": False
-                    },
+                    f"{self.API_URL}/{create_endpoint}",
+                    data=data_payload,
                     headers=headers,
                     timeout=settings.HTTP_TIMEOUT
                 )
@@ -351,15 +432,15 @@ class TorBoxService(BaseDebridService):
 
                 http_error_count = 0
 
-                if return_web_id:
-                    web_id = create_data.get("data", {}).get("webdownload_id")
-                    if not web_id:
-                        debrid_logger.error("No web_id")
+                if return_id:
+                    download_id = create_data.get("data", {}).get(id_key)
+                    if not download_id:
+                        debrid_logger.error(f"No {id_key}")
                         if attempt < settings.DEBRID_MAX_RETRIES - 1:
                             await sleep(settings.DEBRID_RETRY_DELAY_SECONDS)
                             continue
                         return "FATAL_ERROR", http_error_count
-                    return web_id, http_error_count
+                    return download_id, http_error_count
                 else:
                     return "SUCCESS", http_error_count
 
@@ -373,29 +454,40 @@ class TorBoxService(BaseDebridService):
         debrid_logger.error(f"Failed after {settings.DEBRID_MAX_RETRIES} attempts")
         return "FATAL_ERROR", http_error_count
 
-    async def convert_link(self, link: str, api_key: str) -> Optional[str]:
+    async def convert_link(self, link: str, api_key: str, season: Optional[str] = None, episode: Optional[str] = None) -> Optional[str]:
         if not api_key:
             debrid_logger.error("Empty API key")
             return "FATAL_ERROR"
 
-        debrid_logger.debug(f"Converting: {link[:80]}")
+        download_type = "usenet" if "/nzb/" in link else "webdl"
+        request_endpoint = "usenet/requestdl" if download_type == "usenet" else "webdl/requestdl"
+        id_param_key = "usenet_id" if download_type == "usenet" else "web_id"
+
+        debrid_logger.debug(f"Converting ({download_type}): {link[:80]}")
 
         cleaned_link = link
-        if "&af=" in cleaned_link:
+        if download_type == "webdl" and "&af=" in cleaned_link:
             cleaned_link = cleaned_link.split("&af=")[0]
+        elif download_type == "usenet":
+            nzb_id = link.split("/")[-1]
+            cleaned_link = f"{settings.DARKI_API_URL}/nzb/{nzb_id}/download"
 
         headers = self._get_headers(api_key)
 
-        link_hash = self._calculate_hash(cleaned_link)
-        cache_result = await self.check_cache_single_link(cleaned_link, link_hash, api_key)
+        if download_type == "usenet":
+            link_hash = hashlib.md5(cleaned_link.encode()).hexdigest()
+        else:
+            link_hash = self._calculate_hash(cleaned_link)
+
+        cache_result = await self.check_cache_single_link(link, link_hash, api_key, download_type)
 
         http_error_count = 0
-        web_id = None
+        download_id = None
 
         if cache_result.get("status") != "cached":
             debrid_logger.debug("Uncached, re-checking...")
 
-            recheck_result = await self.check_cache_single_link(cleaned_link, link_hash, api_key)
+            recheck_result = await self.check_cache_single_link(link, link_hash, api_key, download_type)
 
             if recheck_result.get("status") == "cached":
                 debrid_logger.debug("Now cached!")
@@ -403,7 +495,7 @@ class TorBoxService(BaseDebridService):
             else:
                 debrid_logger.debug("Still uncached, starting download...")
 
-                result, http_error_count = await self._create_webdownload_with_retry(cleaned_link, headers, http_error_count, return_web_id=False)
+                result, http_error_count = await self._create_download_with_retry(cleaned_link, headers, http_error_count, return_id=False, download_type=download_type)
 
                 if result == "SUCCESS":
                     debrid_logger.debug("Download started - uncached")
@@ -411,26 +503,73 @@ class TorBoxService(BaseDebridService):
                 else:
                     return result
 
-        result, http_error_count = await self._create_webdownload_with_retry(cleaned_link, headers, http_error_count, return_web_id=True)
+        result, http_error_count = await self._create_download_with_retry(cleaned_link, headers, http_error_count, return_id=True, download_type=download_type)
 
         if isinstance(result, str) and result in ["FATAL_ERROR", "RETRY_ERROR", "LINK_DOWN"]:
             return result
 
-        web_id = result
+        download_id = result
 
-        if not web_id:
-            debrid_logger.error("Failed to get web_id")
+        if not download_id:
+            debrid_logger.error(f"Failed to get {id_param_key}")
             return "FATAL_ERROR"
+
+        file_id = 0
+        if download_type == "usenet":
+            try:
+                mylist_response = await http_client.get(
+                    f"{self.API_URL}/usenet/mylist",
+                    params={"id": download_id},
+                    headers=headers,
+                    timeout=settings.HTTP_TIMEOUT
+                )
+
+                if mylist_response.status_code != 200:
+                    debrid_logger.error(f"mylist HTTP {mylist_response.status_code}")
+                    return "FATAL_ERROR"
+
+                mylist_data = mylist_response.json()
+
+                if not mylist_data.get("success"):
+                    debrid_logger.error("mylist failed")
+                    return "FATAL_ERROR"
+
+                files = mylist_data.get("data", {}).get("files", [])
+
+                if not files:
+                    debrid_logger.error("mylist no files")
+                    return "FATAL_ERROR"
+
+                selected_file = None
+
+                if season and episode:
+                    try:
+                        pattern = f"S{int(season):02d}E{int(episode):02d}"
+                        matching_files = [f for f in files if pattern.upper() in f.get("short_name", "").upper()]
+
+                        if matching_files:
+                            selected_file = max(matching_files, key=lambda f: f.get("size", 0))
+                    except (ValueError, TypeError):
+                        pass
+
+                if not selected_file:
+                    selected_file = max(files, key=lambda f: f.get("size", 0))
+
+                file_id = selected_file.get('id', 0)
+
+            except Exception as e:
+                debrid_logger.error(f"mylist exception: {e}")
+                return "FATAL_ERROR"
 
         for attempt in range(settings.DEBRID_MAX_RETRIES):
             try:
 
                 request_response = await http_client.get(
-                    f"{self.API_URL}/webdl/requestdl",
+                    f"{self.API_URL}/{request_endpoint}",
                     params={
                         "token": api_key,
-                        "web_id": web_id,
-                        "file_id": 0,
+                        id_param_key: download_id,
+                        "file_id": file_id,
                         "zip_link": False
                     },
                     headers=headers,

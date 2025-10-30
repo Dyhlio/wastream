@@ -7,6 +7,7 @@ from wastream.core.config import settings
 from wastream.debrid.base import BaseDebridService, HTTP_RETRY_ERRORS
 from wastream.utils.http_client import http_client
 from wastream.utils.logger import debrid_logger, cache_logger
+from wastream.utils.quality import quality_sort_key
 
 # ===========================
 # AllDebrid Error Constants
@@ -192,8 +193,7 @@ class AllDebridService(BaseDebridService):
 
         return results
 
-    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float) -> List[Dict]:
-        from wastream.utils.quality import quality_sort_key
+    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float, user_season: Optional[str] = None, user_episode: Optional[str] = None) -> List[Dict]:
         start_time = time.time()
 
         if not api_key or not results:
@@ -204,12 +204,14 @@ class AllDebridService(BaseDebridService):
         initial_count = len(results)
         filtered_results = []
         for result in results:
+            if result.get("model_type") == "nzb":
+                continue
             hoster = result.get("hoster", "").lower()
             if any(supported_host in hoster for supported_host in settings.ALLDEBRID_SUPPORTED_HOSTS):
                 filtered_results.append(result)
 
         if len(filtered_results) < initial_count:
-            debrid_logger.debug(f"Filtered: {initial_count} → {len(filtered_results)} links")
+            debrid_logger.debug(f"Filtered: {initial_count} → {len(filtered_results)} links (AllDebrid doesn't support Usenet)")
 
         if not filtered_results:
             debrid_logger.debug("No supported hosts")
@@ -336,7 +338,7 @@ class AllDebridService(BaseDebridService):
 
         return all_visible
 
-    async def convert_link(self, link: str, api_key: str) -> Optional[str]:
+    async def convert_link(self, link: str, api_key: str, season: Optional[str] = None, episode: Optional[str] = None) -> Optional[str]:
         if not api_key:
             debrid_logger.error("Empty API key")
             return None

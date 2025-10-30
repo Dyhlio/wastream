@@ -207,8 +207,11 @@ def build_display_name(title: str, year: Optional[str] = None, language: str = "
     if year and str(year) not in title:
         display_name += f" {year}"
 
-    if season and episode:
-        display_name += f" - S{season}E{episode}"
+    if season:
+        if episode:
+            display_name += f" - S{season}E{episode}"
+        else:
+            display_name += f" - S{season}"
 
     if language and language != "Unknown":
         display_name += f" - [{language}]"

@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from wastream.core.config import settings
 from wastream.debrid.alldebrid import alldebrid_service
 from wastream.debrid.torbox import torbox_service
+from wastream.debrid.premiumize import premiumize_service
 from wastream.scrapers.darki_api.anime import anime_scraper as darki_api_anime_scraper
 from wastream.scrapers.darki_api.base import BaseDarkiAPI
 from wastream.scrapers.darki_api.movie import movie_scraper as darki_api_movie_scraper
@@ -19,7 +20,7 @@ from wastream.services.kitsu import kitsu_service
 from wastream.services.tmdb import tmdb_service
 from wastream.utils.cache import get_cache, set_cache
 from wastream.utils.database import SearchLock, is_dead_link, mark_dead_link, database
-from wastream.utils.filters import apply_all_filters, filter_excluded_keywords
+from wastream.utils.filters import apply_all_filters, filter_excluded_keywords, filter_archive_files
 from wastream.utils.helpers import (
     encode_config_to_base64, quote_url_param, parse_size_to_gb,
     deduplicate_and_sort_results, get_debrid_api_key
@@ -38,6 +39,8 @@ class StreamService:
         debrid_service_name = config.get("debrid_service", "alldebrid")
         if debrid_service_name == "torbox":
             return torbox_service
+        elif debrid_service_name == "premiumize":
+            return premiumize_service
         else:
             return alldebrid_service
 
@@ -45,6 +48,8 @@ class StreamService:
         debrid_service_name = config.get("debrid_service", "alldebrid")
         if debrid_service_name == "torbox":
             return settings.TORBOX_SUPPORTED_SOURCES
+        elif debrid_service_name == "premiumize":
+            return settings.PREMIUMIZE_SUPPORTED_SOURCES
         else:
             return settings.ALLDEBRID_SUPPORTED_SOURCES
 
@@ -91,7 +96,10 @@ class StreamService:
 
         debrid_service = self._get_debrid_service(config)
         debrid_api_key = get_debrid_api_key(config, debrid_service)
-        results = await debrid_service.check_cache_and_enrich(results, debrid_api_key, config, remaining_time)
+        results = await debrid_service.check_cache_and_enrich(
+            results, debrid_api_key, config, remaining_time,
+            media_info.get("season"), media_info.get("episode")
+        )
 
         streams = await self._format_streams(
             results,
@@ -102,7 +110,9 @@ class StreamService:
             metadata.get("year"),
             debrid_service
         )
-        
+
+        streams = filter_archive_files(streams)
+
         excluded_keywords = config.get("excluded_keywords", [])
         if excluded_keywords:
             filtered_streams = filter_excluded_keywords(streams, excluded_keywords)
@@ -137,7 +147,7 @@ class StreamService:
     async def _search_content(self, title: str, year: Optional[str],
                              content_type: str, season: Optional[str],
                              episode: Optional[str], metadata: Optional[Dict] = None, config: Dict = None) -> List[Dict]:
-        if metadata and metadata.get("content_type") == "mangas":
+        if metadata and metadata.get("content_type") == "anime":
             return await self._search_anime(title, year, season, episode, metadata, config)
         elif content_type == "series":
             return await self._search_series(title, year, season, episode, metadata, config)
@@ -147,10 +157,10 @@ class StreamService:
     async def _search_wawacity_with_cache(self, content_type: str, scraper, title: str,
                                 year: Optional[str], metadata: Optional[Dict] = None,
                                 season: Optional[str] = None, episode: Optional[str] = None) -> List[Dict]:
-        cache_types = {"films": "wawacity_film", "series": "wawacity_serie", "mangas": "wawacity_anime"}
+        cache_types = {"movies": "wawacity_movie", "series": "wawacity_series", "anime": "wawacity_anime"}
         cache_type = cache_types.get(content_type, f"wawacity_{content_type}")
 
-        lock_type = {"films": "film", "series": "serie", "mangas": "anime"}[content_type]
+        lock_type = {"movies": "movie", "series": "series", "anime": "anime"}[content_type]
 
         async with SearchLock(lock_type, title, year):
             cached_results = await get_cache(database, cache_type, title, year)
@@ -169,8 +179,8 @@ class StreamService:
             return self._filter_episode_results(results, season, episode, content_type)
 
     async def _search_darki_api_with_cache(self, content_type: str, scraper, title: str,
-                                year: Optional[str], metadata: Optional[Dict] = None) -> List[Dict]:
-        cache_types = {"films": "darki_api_film"}
+                                year: Optional[str], metadata: Optional[Dict] = None, config: Optional[Dict] = None) -> List[Dict]:
+        cache_types = {"movies": "darki_api_movie"}
         cache_type = cache_types.get(content_type, f"darki_api_{content_type}")
 
         lock_type = f"darki_api_{content_type}"
@@ -181,7 +191,7 @@ class StreamService:
                 stream_logger.debug(f"Using cached results for {content_type}")
                 return cached_results
 
-            results = await scraper.search(title, year, metadata)
+            results = await scraper.search(title, year, metadata, config)
 
             if results:
                 await set_cache(
@@ -193,15 +203,15 @@ class StreamService:
 
     async def _search_darki_api_with_episode_cache(self, content_type: str, scraper, title: str,
                                 year: Optional[str], metadata: Optional[Dict] = None,
-                                season: Optional[str] = None, episode: Optional[str] = None) -> List[Dict]:
+                                season: Optional[str] = None, episode: Optional[str] = None, config: Optional[Dict] = None) -> List[Dict]:
         if not season or not episode:
             try:
-                return await scraper.search(title, year, metadata, season, episode)
+                return await scraper.search(title, year, metadata, season, episode, config)
             except Exception as e:
                 scraper_logger.error(f"Darki-API search failed: {type(e).__name__}")
                 return []
 
-        base_types = {"series": "serie", "mangas": "anime"}
+        base_types = {"series": "series", "anime": "anime"}
         base_type = base_types.get(content_type, content_type)
         cache_type = f"darki_api_{base_type}_s{season}e{episode}"
 
@@ -213,7 +223,7 @@ class StreamService:
                 stream_logger.debug(f"Using cached results for {content_type} S{season}E{episode}")
                 return cached_results
 
-            results = await scraper.search(title, year, metadata, season, episode)
+            results = await scraper.search(title, year, metadata, season, episode, config)
 
             if results:
                 await set_cache(
@@ -228,7 +238,8 @@ class StreamService:
         title: str,
         year: Optional[str],
         metadata: Dict,
-        absolute_episode: int
+        absolute_episode: int,
+        config: Optional[Dict] = None
     ) -> List[Dict]:
         try:
             darki_api_kitsu_metadata = {
@@ -267,8 +278,8 @@ class StreamService:
             metadata_logger.debug(f"Kitsu→Darki: S{darki_season}E{darki_episode}")
 
             return await self._search_darki_api_with_episode_cache(
-                "mangas", darki_api_anime_scraper, title, year,
-                darki_api_kitsu_metadata, darki_season, darki_episode
+                "anime", darki_api_anime_scraper, title, year,
+                darki_api_kitsu_metadata, darki_season, darki_episode, config
             )
 
         except Exception as e:
@@ -279,8 +290,8 @@ class StreamService:
                                episode: Optional[str], content_type: str) -> List[Dict]:
         if not results or not season or not episode:
             return results
-        
-        if content_type == "mangas":
+
+        if content_type == "anime":
             season_str = str(season) if season is not None else None
             episode_str = str(episode) if episode is not None else None
             filtered = [
@@ -313,9 +324,9 @@ class StreamService:
 
         if "darki-api" in supported_sources:
             if use_episode_cache:
-                tasks.append(self._search_darki_api_with_episode_cache(content_type, darki_scraper, title, year, metadata, season, episode))
+                tasks.append(self._search_darki_api_with_episode_cache(content_type, darki_scraper, title, year, metadata, season, episode, config))
             else:
-                tasks.append(self._search_darki_api_with_cache(content_type, darki_scraper, title, year, metadata))
+                tasks.append(self._search_darki_api_with_cache(content_type, darki_scraper, title, year, metadata, config))
 
         if not tasks:
             stream_logger.debug(f"No supported sources configured for {content_name}")
@@ -333,12 +344,12 @@ class StreamService:
         return all_results
 
     async def _search_movie(self, title: str, year: Optional[str], metadata: Optional[Dict] = None, config: Dict = None) -> List[Dict]:
-        return await self._search_content_common("films", "movie", movie_scraper, darki_api_movie_scraper,
+        return await self._search_content_common("movies", "movie", movie_scraper, darki_api_movie_scraper,
                                           title, year, metadata, None, None, config, use_episode_cache=False)
 
     async def _search_anime(self, title: str, year: Optional[str],
                            season: Optional[str], episode: Optional[str], metadata: Optional[Dict] = None, config: Dict = None) -> List[Dict]:
-        return await self._search_content_common("mangas", "anime", anime_scraper, darki_api_anime_scraper,
+        return await self._search_content_common("anime", "anime", anime_scraper, darki_api_anime_scraper,
                                           title, year, metadata, season, episode, config, use_episode_cache=True)
 
     async def _search_series(self, title: str, year: Optional[str],
@@ -355,7 +366,13 @@ class StreamService:
         if debrid_service is None:
             debrid_service = self._get_debrid_service(config)
 
-        service_abbr = "TB" if debrid_service.get_service_name() == "TorBox" else "AD"
+        service_name = debrid_service.get_service_name()
+        if service_name == "TorBox":
+            service_abbr = "TB"
+        elif service_name == "Premiumize":
+            service_abbr = "PM"
+        else:
+            service_abbr = "AD"
 
         for result in results:
             link = result.get("link")
@@ -371,12 +388,13 @@ class StreamService:
             hoster = result.get("hoster", "Unknown")
             size = result.get("size", "Unknown")
             display_name = result.get("display_name", "Unknown")
-            episode_num = result.get("episode", "")
-            season_num = result.get("season", "")
+            episode_num = result.get("episode") if result.get("episode") is not None else episode
+            season_num = result.get("season") if result.get("season") is not None else season
 
             debrid_filename = result.get("debrid_filename")
             if debrid_filename and debrid_filename.strip():
-                display_name = debrid_filename
+                if not (debrid_filename.startswith("Unknown") and debrid_filename.endswith("Link")):
+                    display_name = debrid_filename
 
             user_languages = config.get("languages", [])
             if user_languages and language.startswith(MULTI_LANGUAGE_PREFIX.title()) and language.endswith(")"):
@@ -403,6 +421,11 @@ class StreamService:
                 config_b64 = encode_config_to_base64(config)
                 quoted_config_b64 = quote_url_param(config_b64)
                 playback_url = f"{base_url}/resolve?link={quoted_link}&b64config={quoted_config_b64}"
+
+                if season_num:
+                    playback_url += f"&season={season_num}"
+                if episode_num:
+                    playback_url += f"&episode={episode_num}"
 
             stream_name = f"[{service_abbr} {cache_emoji}] {settings.ADDON_NAME}"
 
@@ -446,19 +469,19 @@ class StreamService:
         stream_logger.debug(f"Returning {len(streams)} stream(s)")
         return streams
     
-    async def resolve_link(self, link: str, config: Dict) -> Optional[str]:
+    async def resolve_link(self, link: str, config: Dict, season: Optional[str] = None, episode: Optional[str] = None) -> Optional[str]:
         debrid_service = self._get_debrid_service(config)
         debrid_api_key = get_debrid_api_key(config, debrid_service)
 
-        result = await debrid_service.convert_link(link, debrid_api_key)
+        result = await debrid_service.convert_link(link, debrid_api_key, season, episode)
 
         if result == "LINK_DOWN":
             await mark_dead_link(link, settings.DEAD_LINK_TTL)
 
         return result
 
-    async def resolve_link_with_response(self, link: str, config: Dict):
-        direct_link = await self.resolve_link(link, config)
+    async def resolve_link_with_response(self, link: str, config: Dict, season: Optional[str] = None, episode: Optional[str] = None):
+        direct_link = await self.resolve_link(link, config, season, episode)
 
         if direct_link and direct_link not in ["LINK_DOWN", "RETRY_ERROR", "FATAL_ERROR", "LINK_UNCACHED"]:
             return RedirectResponse(url=direct_link, status_code=302)
@@ -493,7 +516,7 @@ class StreamService:
                 "all_titles": kitsu_metadata.get("all_titles", [kitsu_metadata["title"]]),
                 "year": search_year,
                 "type": "movie",
-                "content_type": "films"
+                "content_type": "movies"
             }
             
             results = await self._search_movie(search_title, search_year, enhanced_kitsu_metadata, config)
@@ -512,7 +535,7 @@ class StreamService:
 
             debrid_service = self._get_debrid_service(config)
             debrid_api_key = get_debrid_api_key(config, debrid_service)
-            results = await debrid_service.check_cache_and_enrich(results, debrid_api_key, config, remaining_time)
+            results = await debrid_service.check_cache_and_enrich(results, debrid_api_key, config, remaining_time, None, None)
 
             streams = await self._format_streams(
                 results,
@@ -523,6 +546,8 @@ class StreamService:
                 kitsu_metadata.get("year"),
                 debrid_service
             )
+
+            streams = filter_archive_files(streams)
 
         else:
             actual_season = None
@@ -547,14 +572,14 @@ class StreamService:
                     "all_titles": base_metadata.get("all_titles", [base_metadata["title"]]),
                     "year": search_year,
                     "type": "anime",
-                    "content_type": "mangas"
+                    "content_type": "anime"
                 }
             else:
                 enhanced_kitsu_metadata = {
                     "titles": [search_title] + kitsu_metadata.get("aliases", []),
                     "year": search_year,
                     "type": "anime",
-                    "content_type": "mangas"
+                    "content_type": "anime"
                 }
 
             supported_sources = self._get_supported_sources(config) if config else settings.ALLDEBRID_SUPPORTED_SOURCES
@@ -562,7 +587,7 @@ class StreamService:
             tasks = []
             if "wawacity" in supported_sources:
                 tasks.append(self._search_wawacity_with_cache(
-                    "mangas", anime_scraper, search_title, search_year,
+                    "anime", anime_scraper, search_title, search_year,
                     enhanced_kitsu_metadata, str(actual_season), str(actual_episode)
                 ))
 
@@ -571,7 +596,7 @@ class StreamService:
 
                 tasks.append(self._search_darki_api_with_kitsu_direct_mapping(
                     search_title, search_year, enhanced_kitsu_metadata,
-                    absolute_ep
+                    absolute_ep, config
                 ))
 
             if not tasks:
@@ -601,7 +626,11 @@ class StreamService:
 
             debrid_service = self._get_debrid_service(config)
             debrid_api_key = get_debrid_api_key(config, debrid_service)
-            results = await debrid_service.check_cache_and_enrich(results, debrid_api_key, config, remaining_time)
+            results = await debrid_service.check_cache_and_enrich(
+                results, debrid_api_key, config, remaining_time,
+                str(actual_season) if actual_season else None,
+                str(actual_episode) if actual_episode else None
+            )
 
             streams = await self._format_streams(
                 results,
@@ -612,6 +641,8 @@ class StreamService:
                 search_year,
                 debrid_service
             )
+
+            streams = filter_archive_files(streams)
 
         excluded_keywords = config.get("excluded_keywords", [])
         if excluded_keywords:

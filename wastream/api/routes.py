@@ -74,6 +74,8 @@ async def get_manifest(
             manifest["name"] = f"{settings.ADDON_NAME} | AD"
         elif debrid_service == "torbox":
             manifest["name"] = f"{settings.ADDON_NAME} | TB"
+        elif debrid_service == "premiumize":
+            manifest["name"] = f"{settings.ADDON_NAME} | PM"
 
     return JSONResponse(content=manifest)
 
@@ -121,7 +123,9 @@ async def get_streams(
            description="Converts a link to a direct streaming URL")
 async def resolve(
     link: str = Query(..., description="Link to resolve"),
-    b64config: str = Query(..., description="Base64 encoded configuration")
+    b64config: str = Query(..., description="Base64 encoded configuration"),
+    season: Optional[str] = Query(None, description="Season number for series"),
+    episode: Optional[str] = Query(None, description="Episode number for series")
 ):
     api_logger.debug(f"Resolving link: {link[:80]}")
 
@@ -135,7 +139,7 @@ async def resolve(
         api_logger.debug("No debrid API key")
         return FileResponse("wastream/public/fatal_error.mp4")
 
-    return await stream_service.resolve_link_with_response(link, config)
+    return await stream_service.resolve_link_with_response(link, config, season, episode)
 
 # ===========================
 # Configuration Options Endpoints
@@ -161,7 +165,7 @@ async def get_available_resolutions():
            description="Returns available service providers")
 async def get_available_debrid_services():
     return JSONResponse(content={
-        "debrid_services": ["alldebrid", "torbox"]
+        "debrid_services": ["alldebrid", "torbox", "premiumize"]
     })
 
 @router.get("/password-config",

@@ -33,7 +33,7 @@ class BaseDarkiAPI:
         if has_imdb_id:
             return await self._search_by_imdb_id(titles, metadata)
         else:
-            return await self._search_by_name_and_year(titles, metadata)
+            return await self._search_by_name(titles, metadata)
 
     async def _search_by_imdb_id(self, titles: List[str], metadata: Dict) -> Optional[Dict]:
         target_imdb_id = metadata["imdb_id"]
@@ -78,7 +78,7 @@ class BaseDarkiAPI:
         scraper_logger.debug("No match found for any title variant")
         return None
 
-    async def _search_by_name_and_year(self, titles: List[str], metadata: Dict) -> Optional[Dict]:
+    async def _search_by_name(self, titles: List[str], metadata: Dict) -> Optional[Dict]:
         target_year = metadata.get("year")
 
         if metadata.get("all_titles"):
@@ -92,10 +92,7 @@ class BaseDarkiAPI:
                 scraper_logger.debug(f"Searching Kitsu anime: '{search_title}'")
 
                 search_url = f"{settings.DARKI_API_URL}/search"
-                params = {
-                    "q": search_title,
-                    "content_type": "animes"
-                }
+                params = {"q": search_title}
 
                 response = await http_client.get(search_url, params=params, headers=headers)
 
@@ -104,7 +101,13 @@ class BaseDarkiAPI:
                     continue
 
                 data = response.json()
-                results = data.get("results", [])
+                all_results = data.get("results", [])
+
+                content_type = metadata.get("content_type")
+                if content_type == "movies":
+                    results = [r for r in all_results if r.get("type") in ["animes", "movie"]]
+                else:
+                    results = [r for r in all_results if r.get("type") == "animes"]
 
                 if not results:
                     scraper_logger.debug(f"No results for '{search_title}'")
@@ -184,6 +187,61 @@ class BaseDarkiAPI:
         scraper_logger.debug(f"Total links fetched: {len(all_links)}")
         return all_links
 
+    async def get_all_nzb(self, title_id: int, season: Optional[str] = None, episode: Optional[str] = None) -> List[Dict]:
+        if not settings.DARKI_API_URL:
+            scraper_logger.error("settings.DARKI_API_URL not configured")
+            return []
+
+        all_nzb = []
+        page = 1
+        headers = self._get_headers()
+
+        while True:
+            try:
+                nzb_url = f"{settings.DARKI_API_URL}/titles/{title_id}/nzb"
+                params = {"page": page}
+
+                if season:
+                    params["season"] = season
+                if episode:
+                    params["episode"] = episode
+
+                scraper_logger.debug(f"Fetching NZB page {page} for title {title_id}")
+
+                response = await http_client.get(nzb_url, params=params, headers=headers)
+
+                if response.status_code != 200:
+                    scraper_logger.debug(f"NZB request failed: {response.status_code} on page {page}")
+                    break
+
+                data = response.json()
+                pagination = data.get("pagination", {})
+                nzb_list = pagination.get("data", [])
+
+                if not nzb_list:
+                    scraper_logger.debug(f"No more NZB on page {page}")
+                    break
+
+                all_nzb.extend(nzb_list)
+                scraper_logger.debug(f"Found {len(nzb_list)} NZB on page {page}")
+
+                next_page = pagination.get("next_page")
+                if not next_page:
+                    break
+
+                page += 1
+
+                if page > settings.DARKI_API_MAX_LINK_PAGES:
+                    scraper_logger.debug(f"Reached page limit ({settings.DARKI_API_MAX_LINK_PAGES})")
+                    break
+
+            except Exception as e:
+                scraper_logger.error(f"NZB page {page} fetch error: {type(e).__name__}")
+                break
+
+        scraper_logger.debug(f"Total NZB fetched: {len(all_nzb)}")
+        return all_nzb
+
     async def verify_and_get_link(self, link_id: int) -> Optional[str]:
         if not settings.DARKI_API_URL:
             scraper_logger.error("settings.DARKI_API_URL not configured")
@@ -221,7 +279,7 @@ class BaseDarkiAPI:
 
     async def search_content(self, title: str, year: Optional[str] = None,
                             metadata: Optional[Dict] = None, content_type: str = "movie",
-                            season: Optional[str] = None, episode: Optional[str] = None) -> List[Dict]:
+                            season: Optional[str] = None, episode: Optional[str] = None, config: Optional[Dict] = None) -> List[Dict]:
         content_names = {"movie": "movie", "series": "series", "anime": "anime"}
         content_name = content_names.get(content_type, "content")
 
@@ -255,24 +313,58 @@ class BaseDarkiAPI:
             scraper_logger.debug(f"Found {content_name}: {content_title} (ID: {title_id})")
 
             if season and episode:
-                links = await self.get_all_links(title_id, season=season, episode=episode)
+                enable_full_season = config.get("enable_full_season", True) if config else True
 
-                if not links:
-                    scraper_logger.debug(f"No links found for S{season}E{episode}")
-                    return []
+                if enable_full_season:
+                    links, nzb_list, nzb_full_season = await asyncio.gather(
+                        self.get_all_links(title_id, season=season, episode=episode),
+                        self.get_all_nzb(title_id, season=season, episode=episode),
+                        self.get_all_nzb(title_id, season=season),
+                        return_exceptions=True
+                    )
+                else:
+                    links, nzb_list = await asyncio.gather(
+                        self.get_all_links(title_id, season=season, episode=episode),
+                        self.get_all_nzb(title_id, season=season, episode=episode),
+                        return_exceptions=True
+                    )
+                    nzb_full_season = []
             else:
-                links = await self.get_all_links(title_id)
+                links, nzb_list = await asyncio.gather(
+                    self.get_all_links(title_id),
+                    self.get_all_nzb(title_id),
+                    return_exceptions=True
+                )
+                nzb_full_season = []
 
-                if not links:
-                    scraper_logger.debug(f"No links found for {content_name}")
-                    return []
+            if isinstance(links, Exception):
+                links = []
+            if isinstance(nzb_list, Exception):
+                nzb_list = []
+            if isinstance(nzb_full_season, Exception):
+                nzb_full_season = []
+
+            nzb_full_season_filtered = [nzb for nzb in nzb_full_season if nzb.get("full_saison") == 1]
+            nzb_list_combined = nzb_list + nzb_full_season_filtered
+
+            if not links and not nzb_list_combined:
+                scraper_logger.debug(f"No links or NZB found for {content_name}")
+                return []
 
             is_series = season is not None and episode is not None
 
-            results = await self.format_links(links, content_title, year=year, is_series=is_series)
+            ddl_results = []
+            if links:
+                ddl_results = await self.format_links(links, content_title, year=year, is_series=is_series)
 
-            scraper_logger.debug(f"[Darki-API] {content_name.title()} links found: {len(results)}")
-            return results
+            nzb_results = []
+            if nzb_list_combined:
+                nzb_results = await self.format_nzb(nzb_list_combined, content_title, year=year, is_series=is_series)
+
+            all_results = ddl_results + nzb_results
+
+            scraper_logger.debug(f"[Darki-API] {content_name.title()} links found: {len(all_results)} ({len(ddl_results)} DDL + {len(nzb_results)} NZB)")
+            return all_results
 
         except Exception as e:
             scraper_logger.error(f"[Darki-API] {content_name.title()} search error: {type(e).__name__}")
@@ -340,7 +432,8 @@ class BaseDarkiAPI:
                     "source": "Darki-API",
                     "hoster": host_name.title(),
                     "size": size_str,
-                    "display_name": display_name
+                    "display_name": display_name,
+                    "model_type": "link"
                 }
 
                 if is_series:
@@ -356,6 +449,80 @@ class BaseDarkiAPI:
         formatted_results.sort(key=quality_sort_key)
 
         scraper_logger.debug(f"[Darki-API] Formatted {len(formatted_results)} valid links")
+        return formatted_results
+
+    async def format_nzb(self, nzb_list: List[Dict], content_title: str, year: Optional[str] = None, is_series: bool = False, user_prefs: list = None) -> List[Dict]:
+        if not nzb_list:
+            return []
+
+        formatted_results = []
+
+        for nzb in nzb_list:
+            try:
+                nzb_id = nzb.get("id")
+
+                qual_data = nzb.get("qual", {})
+                raw_quality = qual_data.get("qual", "Unknown") if isinstance(qual_data, dict) else "Unknown"
+                quality = normalize_quality(raw_quality)
+
+                languages_compact = nzb.get("langues_compact", [])
+                audio_langs = [lang.get("name", "") for lang in languages_compact if isinstance(lang, dict)]
+
+                subs_compact = nzb.get("subs_compact", [])
+                subtitle_langs = [sub.get("name", "") for sub in subs_compact if isinstance(sub, dict)]
+
+                language = combine_languages(audio_langs, subtitle_langs, user_prefs)
+
+                size = nzb.get("size", 0)
+                if size and size > 0:
+                    size_gb = size / (1024 ** 3)
+                    size_str = f"{size_gb:.2f} GB"
+                else:
+                    size_str = "Unknown"
+
+                size_str = normalize_size(size_str)
+
+                season = None
+                episode = None
+                if is_series:
+                    season = str(nzb.get("saison", "1"))
+                    nzb_episode = nzb.get("episode")
+                    if nzb_episode is not None:
+                        episode = str(nzb_episode)
+
+                display_name = build_display_name(
+                    title=content_title,
+                    year=year,
+                    language=language,
+                    quality=quality,
+                    season=season,
+                    episode=episode
+                )
+
+                result = {
+                    "link": f"{settings.DARKI_API_URL}/nzb/{nzb_id}",
+                    "quality": quality,
+                    "language": language,
+                    "source": "Darki-API",
+                    "hoster": "Usenet",
+                    "size": size_str,
+                    "display_name": display_name,
+                    "model_type": "nzb"
+                }
+
+                if is_series:
+                    result["season"] = season
+                    result["episode"] = episode
+
+                formatted_results.append(result)
+
+            except Exception as e:
+                scraper_logger.error(f"NZB format error: {type(e).__name__}")
+                continue
+
+        formatted_results.sort(key=quality_sort_key)
+
+        scraper_logger.debug(f"[Darki-API] Formatted {len(formatted_results)} valid NZB")
         return formatted_results
 
     async def get_title_details(self, title_id: int) -> Optional[Dict]:

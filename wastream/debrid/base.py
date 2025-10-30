@@ -14,11 +14,11 @@ HTTP_RETRY_ERRORS = [429, 500, 502, 503, 504]
 class BaseDebridService(ABC):
 
     @abstractmethod
-    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict) -> List[Dict]:
+    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float = 0, user_season: Optional[str] = None, user_episode: Optional[str] = None) -> List[Dict]:
         pass
 
     @abstractmethod
-    async def convert_link(self, link: str, api_key: str) -> Optional[str]:
+    async def convert_link(self, link: str, api_key: str, season: Optional[str] = None, episode: Optional[str] = None) -> Optional[str]:
         pass
 
     @abstractmethod

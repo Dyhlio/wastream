@@ -71,7 +71,7 @@ class TMDBService:
                         "titles": titles,
                         "year": year,
                         "type": "movie",
-                        "content_type": "films"
+                        "content_type": "movies"
                     }
 
             elif data.get("tv_results"):
@@ -114,7 +114,7 @@ class TMDBService:
                         keyword_ids = [kw.get("id") for kw in keywords]
 
                         if 210024 in keyword_ids:
-                            content_type = "mangas"
+                            content_type = "anime"
 
                     metadata_logger.debug(f"TMDB series: {len(titles)} titles ({content_type})")
                     return {

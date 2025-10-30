@@ -6,8 +6,8 @@ from wastream.scrapers.darki_api.base import BaseDarkiAPI
 # ===========================
 class MovieScraper(BaseDarkiAPI):
 
-    async def search(self, title: str, year: Optional[str] = None, metadata: Optional[Dict] = None) -> List[Dict]:
-        results = await self.search_content(title, year, metadata, content_type="movie")
+    async def search(self, title: str, year: Optional[str] = None, metadata: Optional[Dict] = None, config: Optional[Dict] = None) -> List[Dict]:
+        results = await self.search_content(title, year, metadata, content_type="movie", config=config)
         return results
 
 # ===========================
