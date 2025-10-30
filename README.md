@@ -47,7 +47,7 @@
 - **⚡ Instant cache check** - Verifies availability before conversion
 - **🔄 Round-robin processing** - Optimized link checking algorithm
 - **🎯 Quality filtering** - Filter by resolution (4K, 1080p, 720p, etc.)
-- **🌐 Language filtering** - Multi-language and subtitle support
+- **🌍 Language filtering** - Multi-language and subtitle support
 - **📦 Size filtering** - Filter by file size
 - **🔒 Password protection** - Optional addon password protection
 - **💾 Database support** - SQLite or PostgreSQL
