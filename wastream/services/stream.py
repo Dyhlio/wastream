@@ -431,7 +431,7 @@ class StreamService:
 
             description_parts = []
             if language and language != "Unknown":
-                description_parts.append(f"🌐 {language}")
+                description_parts.append(f"🌍 {language}")
             if quality and quality != "Unknown":
                 description_parts.append(f"🎞️ {quality}")
 
@@ -446,9 +446,9 @@ class StreamService:
             source_line = ""
             source = result.get("source", "Wawacity")
             if source == "Darki-API":
-                source_line += "🌍 Darki-API"
+                source_line += "🌐 Darki-API"
             else:
-                source_line += "🌍 Wawacity"
+                source_line += "🌐 Wawacity"
 
             if hoster and hoster != "Unknown":
                 source_line += f" ☁️ {hoster}"
