@@ -182,7 +182,10 @@ class TorBoxService(BaseDebridService):
                     download_url = f"{settings.DARKI_API_URL}/nzb/{nzb_id}/download"
                     link_hash = hashlib.md5(download_url.encode()).hexdigest()
                 else:
-                    link_hash = self._calculate_hash(link)
+                    cleaned_link = link
+                    if "&af=" in cleaned_link:
+                        cleaned_link = cleaned_link.split("&af=")[0]
+                    link_hash = self._calculate_hash(cleaned_link)
                 link_to_hash[link] = link_hash
                 hashes.append(link_hash)
 
