@@ -488,23 +488,15 @@ class TorBoxService(BaseDebridService):
         download_id = None
 
         if cache_result.get("status") != "cached":
-            debrid_logger.debug("Uncached, re-checking...")
+            debrid_logger.debug("Uncached, starting download...")
 
-            recheck_result = await self.check_cache_single_link(link, link_hash, api_key, download_type)
+            result, http_error_count = await self._create_download_with_retry(cleaned_link, headers, http_error_count, return_id=False, download_type=download_type)
 
-            if recheck_result.get("status") == "cached":
-                debrid_logger.debug("Now cached!")
-                cache_result = recheck_result
+            if result == "SUCCESS":
+                debrid_logger.debug("Download started - uncached")
+                return "LINK_UNCACHED"
             else:
-                debrid_logger.debug("Still uncached, starting download...")
-
-                result, http_error_count = await self._create_download_with_retry(cleaned_link, headers, http_error_count, return_id=False, download_type=download_type)
-
-                if result == "SUCCESS":
-                    debrid_logger.debug("Download started - uncached")
-                    return "LINK_UNCACHED"
-                else:
-                    return result
+                return result
 
         result, http_error_count = await self._create_download_with_retry(cleaned_link, headers, http_error_count, return_id=True, download_type=download_type)
 
