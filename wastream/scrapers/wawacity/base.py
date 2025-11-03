@@ -408,7 +408,7 @@ class BaseWawacity:
             if response.status_code == 200:
                 parser = HTMLParser(response.text)
                 
-                link_rows = parser.css('#DDLLinks tr.link-row:nth-child(n+2)')
+                link_rows = parser.css('#DDLLinkѕ tr.link-row:nth-child(n+2)')
                 filtered_rows = self.filter_nodes(link_rows, r"Lien .*")
                 
                 for row in filtered_rows:
