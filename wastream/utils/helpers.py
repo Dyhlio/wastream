@@ -149,7 +149,13 @@ def normalize_size(raw_size: str) -> str:
     if normalized.upper() in ["N/A", "NULL", "UNKNOWN", "INCONNU", ""]:
         return "Unknown"
 
-    return normalized
+    normalized_upper = normalized.upper()
+    normalized_upper = normalized_upper.replace(",", ".")
+    normalized_upper = normalized_upper.replace(" GO", " GB")
+    normalized_upper = normalized_upper.replace(" MO", " MB")
+    normalized_upper = normalized_upper.replace(" KO", " KB")
+
+    return normalized_upper
 
 # ===========================
 # Size Parsing to GB
