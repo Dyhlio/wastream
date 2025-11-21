@@ -4,7 +4,7 @@ import time
 from asyncio import sleep
 from typing import List, Dict, Optional, Tuple
 
-from wastream.core.config import settings
+from wastream.config.settings import settings
 from wastream.debrid.base import BaseDebridService, HTTP_RETRY_ERRORS
 from wastream.utils.http_client import http_client
 from wastream.utils.logger import debrid_logger, cache_logger

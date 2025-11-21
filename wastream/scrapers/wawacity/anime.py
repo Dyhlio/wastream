@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 from selectolax.parser import HTMLParser
 
 from wastream.scrapers.wawacity.base import BaseWawacity
-from wastream.core.config import settings
+from wastream.config.settings import settings
 from wastream.utils.http_client import http_client
 from wastream.utils.logger import scraper_logger
 from wastream.utils.quality import quality_sort_key

@@ -2,7 +2,7 @@ import re
 from typing import Optional, Dict, List, Tuple
 from wastream.utils.http_client import http_client
 from wastream.utils.logger import metadata_logger
-from wastream.core.config import settings
+from wastream.config.settings import settings
 
 # ===========================
 # Kitsu Service Class

@@ -5,7 +5,7 @@ from typing import List, Dict, Optional, Tuple
 
 from fastapi.responses import FileResponse, RedirectResponse
 
-from wastream.core.config import settings
+from wastream.config.settings import settings
 from wastream.debrid.alldebrid import alldebrid_service
 from wastream.debrid.torbox import torbox_service
 from wastream.debrid.premiumize import premiumize_service

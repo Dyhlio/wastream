@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Request, Query, Path
 from fastapi.responses import JSONResponse, RedirectResponse, FileResponse, HTMLResponse
 
-from wastream.core.config import settings
+from wastream.config.settings import settings
 from wastream.utils.validators import validate_config
 from wastream.services.stream import stream_service
 from wastream.utils.languages import AVAILABLE_LANGUAGES

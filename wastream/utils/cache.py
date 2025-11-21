@@ -2,7 +2,7 @@ import json
 import time
 from typing import Optional, List, Dict, Any
 
-from wastream.core.config import settings
+from wastream.config.settings import settings
 from wastream.utils.helpers import create_cache_key
 from wastream.utils.logger import cache_logger
 

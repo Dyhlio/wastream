@@ -12,7 +12,7 @@ from starlette.requests import Request
 from wastream.api.routes import router
 from wastream.utils.database import setup_database, teardown_database, cleanup_expired_data
 from wastream.utils.http_client import http_client
-from wastream.core.config import settings
+from wastream.config.settings import settings
 from wastream.utils.logger import setup_logger, addon_logger, api_logger
 
 # ===========================

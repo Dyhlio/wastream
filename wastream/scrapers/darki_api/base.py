@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Dict, Optional, Any
 
-from wastream.core.config import settings
+from wastream.config.settings import settings
 from wastream.utils.helpers import normalize_text, normalize_size, build_display_name
 from wastream.utils.http_client import http_client
 from wastream.utils.languages import combine_languages

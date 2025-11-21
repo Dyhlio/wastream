@@ -16,11 +16,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Step 2: Extract version from config.py
+    # Step 2: Extract version from settings.py
     - name: Get version from ADDON_MANIFEST
       id: get-version
       run: |
-        VERSION=$(grep '"version":' wastream/core/config.py | sed -n 's/.*"version": "\([^"]*\)".*/\1/p')
+        VERSION=$(grep '"version":' wastream/config/settings.py | sed -n 's/.*"version": "\([^"]*\)".*/\1/p')
         echo "Extracted version: $VERSION"
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 

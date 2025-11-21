@@ -4,7 +4,7 @@ from typing import List, Dict, Optional, Any
 
 from selectolax.parser import HTMLParser, Node
 
-from wastream.core.config import settings
+from wastream.config.settings import settings
 from wastream.utils.helpers import (
     quote_url_param, normalize_text, extract_and_decode_filename,
     parse_movie_info, parse_series_info, format_url, normalize_size, build_display_name

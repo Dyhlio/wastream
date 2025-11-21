@@ -1,6 +1,6 @@
 from typing import Optional, Dict
 from wastream.utils.http_client import http_client
-from wastream.core.config import settings
+from wastream.config.settings import settings
 from wastream.utils.logger import metadata_logger
 
 # ===========================

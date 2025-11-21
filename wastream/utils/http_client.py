@@ -2,7 +2,7 @@ from typing import Optional, Dict, Any
 
 import httpx
 
-from wastream.core.config import settings
+from wastream.config.settings import settings
 
 # ===========================
 # HTTP Client Singleton

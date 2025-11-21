@@ -6,7 +6,7 @@ from typing import Optional
 
 from databases import Database
 
-from wastream.core.config import settings
+from wastream.config.settings import settings
 from wastream.utils.helpers import create_cache_key
 from wastream.utils.logger import database_logger
 
