@@ -462,6 +462,9 @@ class StreamService:
             streams.append({
                 "name": stream_name,
                 "description": "\r\n".join(description_parts),
+                "behaviorHints": {
+                    "filename": display_name
+                },
                 "url": playback_url
             })
         
