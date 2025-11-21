@@ -208,22 +208,31 @@ def deduplicate_and_sort_results(results: list, quality_sort_key_func) -> list:
 def build_display_name(title: str, year: Optional[str] = None, language: str = "Unknown",
                        quality: str = "Unknown", season: Optional[str] = None,
                        episode: Optional[str] = None) -> str:
-    display_name = title
+    display_name = title.replace(" ", ".")
 
     if year and str(year) not in title:
-        display_name += f" {year}"
+        display_name += f".{year}"
 
     if season:
         if episode:
-            display_name += f" - S{season}E{episode}"
+            season_padded = str(season).zfill(2)
+            episode_padded = str(episode).zfill(2)
+            display_name += f".S{season_padded}E{episode_padded}"
         else:
-            display_name += f" - S{season}"
+            season_padded = str(season).zfill(2)
+            display_name += f".S{season_padded}"
 
     if language and language != "Unknown":
-        display_name += f" - [{language}]"
+        if language.startswith("Multi (") and language.endswith(")"):
+            langs_str = language[7:-1]
+            langs = [lang.strip() for lang in langs_str.split(",")]
+            display_name += ".MULTi." + ".".join(langs)
+        else:
+            display_name += f".{language.replace(' ', '.')}"
 
     if quality and quality != "Unknown":
-        display_name += f" - [{quality}]"
+        quality_cleaned = quality.replace(" ", ".").replace("(", "").replace(")", "")
+        display_name += f".{quality_cleaned}"
 
     return display_name
 
