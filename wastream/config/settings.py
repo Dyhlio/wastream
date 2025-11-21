@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     # Cache Configuration
     # ===========================
     CONTENT_CACHE_TTL: Optional[int] = 3600
-    DEAD_LINK_TTL: Optional[int] = 604800
+    DEAD_LINK_TTL: Optional[int] = 2592000
 
     # ===========================
     # Lock Configuration
@@ -65,10 +65,10 @@ class Settings(BaseSettings):
     # ===========================
     # Debrid Services Configuration
     # ===========================
-    DEBRID_MAX_RETRIES: Optional[int] = 10
-    DEBRID_RETRY_DELAY_SECONDS: int = 2
+    DEBRID_MAX_RETRIES: Optional[int] = 5
+    DEBRID_RETRY_DELAY_SECONDS: int = 4
     STREAM_REQUEST_TIMEOUT: int = 20
-    DEBRID_CACHE_CHECK_HTTP_TIMEOUT: Optional[int] = 5
+    DEBRID_CACHE_CHECK_HTTP_TIMEOUT: Optional[int] = 3
     DEBRID_HTTP_ERROR_MAX_RETRIES: Optional[int] = 5
     DEBRID_HTTP_ERROR_RETRY_DELAY: Optional[int] = 1
 
