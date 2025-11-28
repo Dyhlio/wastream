@@ -265,8 +265,11 @@ class StreamService:
 
             metadata_logger.debug(f"Kitsu→Darki: mapping episode {absolute_episode}")
 
+            imdb_id = darki_api_result.get("imdb_id")
+            tmdb_api_token = config.get("tmdb_api_token", "") if config else ""
+
             darki_mapping = await darki_api_scraper.map_kitsu_absolute_to_darki_season(
-                title_id, absolute_episode
+                absolute_episode, imdb_id, tmdb_api_token
             )
 
             if not darki_mapping:
