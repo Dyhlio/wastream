@@ -143,6 +143,63 @@ class TMDBService:
             }
         return None
 
+    async def get_seasons_episode_count(self, imdb_id: str, tmdb_api_token: str) -> Optional[Dict]:
+        if not tmdb_api_token or not tmdb_api_token.strip():
+            metadata_logger.error("Empty TMDB token")
+            return None
+
+        metadata_logger.debug(f"Fetching TMDB seasons: {imdb_id}")
+
+        headers = {
+            "Authorization": f"Bearer {tmdb_api_token}",
+            "Content-Type": "application/json",
+        }
+
+        try:
+            find_url = f"{self.BASE_URL}/find/{imdb_id}?external_source=imdb_id"
+            response = await http_client.get(find_url, headers=headers, timeout=settings.METADATA_TIMEOUT)
+
+            if response.status_code != 200:
+                return None
+
+            data = response.json()
+            if not data.get("tv_results"):
+                return None
+
+            tv_id = data["tv_results"][0]["id"]
+
+            details_url = f"{self.BASE_URL}/tv/{tv_id}"
+            details_response = await http_client.get(details_url, headers=headers, timeout=settings.METADATA_TIMEOUT)
+
+            if details_response.status_code != 200:
+                return None
+
+            details = details_response.json()
+            seasons = details.get("seasons", [])
+
+            seasons_data = []
+            for season in seasons:
+                season_number = season.get("season_number", 0)
+                if season_number > 0:
+                    seasons_data.append({
+                        "number": season_number,
+                        "episode_count": season.get("episode_count", 0)
+                    })
+
+            seasons_data.sort(key=lambda s: s["number"])
+
+            metadata_logger.debug(f"TMDB seasons: {len(seasons_data)} for {imdb_id}")
+
+            return {
+                "imdb_id": imdb_id,
+                "tmdb_id": tv_id,
+                "seasons": seasons_data
+            }
+
+        except Exception as e:
+            metadata_logger.error(f"TMDB seasons fetch error: {type(e).__name__}")
+            return None
+
 # ===========================
 # Singleton Instance
 # ===========================
