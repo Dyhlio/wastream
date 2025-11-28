@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 
 from wastream.config.settings import settings
 from wastream.utils.helpers import normalize_text, normalize_size, build_display_name
@@ -7,6 +7,7 @@ from wastream.utils.http_client import http_client
 from wastream.utils.languages import combine_languages
 from wastream.utils.logger import scraper_logger
 from wastream.utils.quality import quality_sort_key, normalize_quality
+from wastream.services.tmdb import tmdb_service
 
 # ===========================
 # Base Darki API Client Class
@@ -550,35 +551,28 @@ class BaseDarkiAPI:
             scraper_logger.error(f"Title details error: {type(e).__name__}")
             return None
 
-    async def map_kitsu_absolute_to_darki_season(self, title_id: int, absolute_episode: int) -> Optional[tuple]:
-        details = await self.get_title_details(title_id)
-
-        if not details:
-            scraper_logger.debug("No title details for mapping")
+    async def map_kitsu_absolute_to_darki_season(self, absolute_episode: int, imdb_id: Optional[str] = None, tmdb_api_token: Optional[str] = None) -> Optional[Tuple[str, str]]:
+        if not imdb_id or not tmdb_api_token:
+            scraper_logger.debug("No imdb_id or tmdb_api_token for mapping")
             return None
 
-        title_data = details.get("title", {})
-        seasons_data = details.get("seasons", {})
-        seasons = seasons_data.get("data", [])
+        tmdb_data = await tmdb_service.get_seasons_episode_count(imdb_id, tmdb_api_token)
 
-        if not seasons:
-            scraper_logger.debug("No seasons data found")
+        if not tmdb_data or not tmdb_data.get("seasons"):
+            scraper_logger.debug("No TMDB seasons data for mapping")
             return None
 
-        regular_seasons = [s for s in seasons if s.get("number", 0) > 0]
-
-        regular_seasons.sort(key=lambda s: s.get("number", 0))
-
+        seasons = tmdb_data["seasons"]
         episode_counter = 0
 
-        for season in regular_seasons:
+        for season in seasons:
             season_number = season.get("number")
-            episode_count = season.get("episodes_count", 0)
+            episode_count = season.get("episode_count", 0)
 
             if episode_counter + episode_count >= absolute_episode:
                 episode_in_season = absolute_episode - episode_counter
 
-                scraper_logger.debug(f"Kitsu episode {absolute_episode} (absolute) → Darki S{season_number}E{episode_in_season}")
+                scraper_logger.debug(f"Kitsu episode {absolute_episode} (absolute) → S{season_number}E{episode_in_season}")
                 return (str(season_number), str(episode_in_season))
 
             episode_counter += episode_count
