@@ -386,6 +386,40 @@ async def health_check():
             "message": "Wawacity not configured"
         }
 
+    if settings.FREE_TELECHARGER_URL:
+        free_telecharger_start = time.time()
+        try:
+            response = await http_client.get(settings.FREE_TELECHARGER_URL, timeout=settings.HEALTH_CHECK_TIMEOUT)
+            free_telecharger_time = round((time.time() - free_telecharger_start) * 1000)
+
+            if response.status_code == 200:
+                health_status["checks"]["free_telecharger"] = {
+                    "status": "ok",
+                    "message": "Free-Telecharger accessible",
+                    "response_time_ms": free_telecharger_time
+                }
+            else:
+                health_status["checks"]["free_telecharger"] = {
+                    "status": "error",
+                    "message": f"Free-Telecharger HTTP {response.status_code}",
+                    "response_time_ms": free_telecharger_time
+                }
+                health_status["status"] = "degraded"
+
+        except Exception as e:
+            free_telecharger_time = round((time.time() - free_telecharger_start) * 1000)
+            health_status["checks"]["free_telecharger"] = {
+                "status": "error",
+                "message": f"Free-Telecharger unreachable: {str(e)}",
+                "response_time_ms": free_telecharger_time
+            }
+            health_status["status"] = "unhealthy"
+    else:
+        health_status["checks"]["free_telecharger"] = {
+            "status": "disabled",
+            "message": "Free-Telecharger not configured"
+        }
+
     if settings.DARKI_API_URL:
         darki_api_start = time.time()
         try:
