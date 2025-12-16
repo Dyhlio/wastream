@@ -271,13 +271,15 @@ class StreamService:
                     "filename": display_name
                 },
                 "url": playback_url,
+                "_cache_priority": 0 if cache_status == "cached" else 1,
                 "_quality_key": quality_sort_key(result),
                 "_service_order": service_order.get(service_name, 999)
             })
 
-        streams.sort(key=lambda s: (s["_quality_key"], s["_service_order"]))
+        streams.sort(key=lambda s: (s["_cache_priority"], s["_quality_key"], s["_service_order"]))
 
         for s in streams:
+            del s["_cache_priority"]
             del s["_quality_key"]
             del s["_service_order"]
 
