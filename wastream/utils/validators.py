@@ -3,8 +3,10 @@ import json
 from base64 import b64decode
 from typing import Optional, Dict
 
+from wastream.config.settings import settings
 from wastream.utils.logger import api_logger
 from wastream.utils.quality import AVAILABLE_RESOLUTIONS
+
 
 # ===========================
 # Configuration Validation
@@ -29,16 +31,63 @@ def validate_config(config_base64: Optional[str]) -> Optional[Dict[str, str]]:
             api_logger.debug("Missing or empty tmdb_api_token")
             return None
 
-        if "debrid_service" not in config_dict or not config_dict["debrid_service"]:
-            api_logger.debug("Missing or empty debrid_service")
-            return None
+        if "debrid_services" in config_dict:
+            debrid_services = config_dict["debrid_services"]
+            if not isinstance(debrid_services, list) or len(debrid_services) == 0:
+                api_logger.debug("Invalid debrid_services format")
+                return None
 
-        if "debrid_api_key" not in config_dict or not config_dict["debrid_api_key"]:
-            api_logger.debug("Missing or empty debrid_api_key")
-            return None
+            for service_entry in debrid_services:
+                if not isinstance(service_entry, dict):
+                    api_logger.debug("Invalid debrid service entry format")
+                    return None
 
-        if config_dict["debrid_service"] not in ["alldebrid", "torbox", "premiumize"]:
-            api_logger.debug(f"Invalid debrid_service: {config_dict['debrid_service']}")
+                if "service" not in service_entry or not service_entry["service"]:
+                    api_logger.debug("Missing service in debrid entry")
+                    return None
+
+                if "api_key" not in service_entry or not service_entry["api_key"]:
+                    api_logger.debug("Missing api_key in debrid entry")
+                    return None
+
+                if service_entry["service"] not in settings.DEBRID_SERVICES:
+                    api_logger.debug(f"Invalid debrid_service: {service_entry['service']}")
+                    return None
+
+                if "hosts" in service_entry:
+                    if not isinstance(service_entry["hosts"], list):
+                        api_logger.debug("Invalid hosts format")
+                        return None
+                    for host in service_entry["hosts"]:
+                        if not isinstance(host, str):
+                            api_logger.debug("Invalid host entry")
+                            return None
+
+                if "sources" in service_entry:
+                    if not isinstance(service_entry["sources"], list):
+                        api_logger.debug("Invalid sources format")
+                        return None
+                    for source in service_entry["sources"]:
+                        if not isinstance(source, str):
+                            api_logger.debug("Invalid source entry")
+                            return None
+
+        elif "debrid_service" in config_dict and "debrid_api_key" in config_dict:
+            if not config_dict["debrid_service"] or not config_dict["debrid_api_key"]:
+                api_logger.debug("Missing or empty debrid_service/debrid_api_key")
+                return None
+
+            if config_dict["debrid_service"] not in settings.DEBRID_SERVICES:
+                api_logger.debug(f"Invalid debrid_service: {config_dict['debrid_service']}")
+                return None
+
+            config_dict["debrid_services"] = [{
+                "service": config_dict["debrid_service"],
+                "api_key": config_dict["debrid_api_key"]
+            }]
+
+        else:
+            api_logger.debug("Missing debrid configuration")
             return None
 
         if "excluded_keywords" in config_dict:
@@ -95,6 +144,7 @@ def validate_config(config_base64: Optional[str]) -> Optional[Dict[str, str]]:
     except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as e:
         api_logger.debug(f"Config validation failed: {type(e).__name__}")
         return None
+
 
 # ===========================
 # Media Info Extraction

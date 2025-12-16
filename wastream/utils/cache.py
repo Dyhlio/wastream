@@ -1,10 +1,11 @@
 import json
 import time
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Tuple
 
 from wastream.config.settings import settings
 from wastream.utils.helpers import create_cache_key
 from wastream.utils.logger import cache_logger
+
 
 # ===========================
 # Cache Retrieval
@@ -33,11 +34,43 @@ async def get_cache(database, cache_type: str, title: str, year: Optional[str] =
         cache_logger.error(f"Cache read failed: {type(e).__name__}")
         return None
 
+
+async def get_cache_with_status(database, cache_type: str, title: str, year: Optional[str] = None) -> Tuple[Optional[List[Dict]], bool]:
+    cache_key = create_cache_key(cache_type, title, year)
+
+    try:
+        current_time = time.time()
+        result = await database.fetch_one(
+            "SELECT content, expires_at FROM content_cache WHERE cache_key = :cache_key",
+            {"cache_key": cache_key}
+        )
+
+        if not result:
+            cache_logger.debug(f"Miss: {cache_type} {title} ({year})")
+            return None, False
+
+        cached_data = json.loads(result["content"])
+        is_valid = result["expires_at"] > current_time
+
+        if is_valid:
+            cache_logger.debug(f"Hit (valid): {cache_type} {title} ({year}) - {len(cached_data)} results")
+        else:
+            cache_logger.debug(f"Hit (expired): {cache_type} {title} ({year}) - {len(cached_data)} results")
+
+        return cached_data, is_valid
+    except json.JSONDecodeError as e:
+        cache_logger.error(f"Corrupted cache: {type(e).__name__}")
+        return None, False
+    except Exception as e:
+        cache_logger.error(f"Cache read failed: {type(e).__name__}")
+        return None, False
+
+
 # ===========================
 # Cache Storage
 # ===========================
 async def set_cache(database, cache_type: str, title: str, year: Optional[str] = None,
-                   results: Optional[List] = None, ttl: int = 3600):
+                    results: Optional[List] = None, ttl: int = 3600):
     cache_key = create_cache_key(cache_type, title, year)
 
     try:

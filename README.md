@@ -73,6 +73,7 @@ services:
       - ./data:/app/data
     environment:
       - WAWACITY_URL=https://example.com
+      - FREE_TELECHARGER_URL=https://example.com
       - DARKI_API_URL=https://api.example.com
       - DARKI_API_KEY=your_api_key_here
       - DATABASE_TYPE=sqlite
@@ -137,7 +138,7 @@ The addon will appear in your Stremio addon list.
 See [`.env.example`](.env.example) for all available configuration options.
 
 **Required:**
-- `WAWACITY_URL` or `DARKI_API_URL` - At least one source must be configured
+- `WAWACITY_URL`, `FREE_TELECHARGER_URL` or `DARKI_API_URL` - At least one source must be configured
 - Debrid API key (AllDebrid or TorBox) - Configured via web interface
 - TMDB API token - Configured via web interface
 

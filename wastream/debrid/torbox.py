@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 import time
 from asyncio import sleep
@@ -17,6 +16,7 @@ RETRY_ERRORS = [
     "DOWNLOAD_SERVER_ERROR",
     "NO_SERVERS_AVAILABLE_ERROR",
 ]
+
 
 # ===========================
 # TorBox Service Class
@@ -286,7 +286,7 @@ class TorBoxService(BaseDebridService):
 
         return links
 
-    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float, user_season: Optional[str] = None, user_episode: Optional[str] = None) -> List[Dict]:
+    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float, user_season: Optional[str] = None, user_episode: Optional[str] = None, user_hosts: Optional[List[str]] = None) -> List[Dict]:
         start_time = time.time()
 
         if not api_key or not results:
@@ -295,6 +295,7 @@ class TorBoxService(BaseDebridService):
             return results
 
         enable_nzb = config.get("enable_nzb", False)
+        supported_hosts = user_hosts if user_hosts else settings.TORBOX_SUPPORTED_HOSTS
 
         initial_count = len(results)
         filtered_results = []
@@ -306,7 +307,7 @@ class TorBoxService(BaseDebridService):
                     nzb_results.append(result)
             else:
                 hoster = result.get("hoster", "").lower()
-                if any(supported_host in hoster for supported_host in settings.TORBOX_SUPPORTED_HOSTS):
+                if any(supported_host in hoster for supported_host in supported_hosts):
                     filtered_results.append(result)
 
         if len(filtered_results) + len(nzb_results) < initial_count:
@@ -368,7 +369,7 @@ class TorBoxService(BaseDebridService):
 
         return all_visible
 
-    async def _create_download_with_retry(self, link: str, headers: Dict, http_error_count: int, return_id: bool = True, download_type: str = "webdl"):
+    async def _create_download_with_retry(self, link: str, headers: Dict, http_error_count: int, return_id: bool = True, download_type: str = "webdl") -> Tuple[str, int]:
         create_endpoint = "usenet/createusenetdownload" if download_type == "usenet" else "webdl/createwebdownload"
         id_key = "usenetdownload_id" if download_type == "usenet" else "webdownload_id"
 
@@ -632,6 +633,7 @@ class TorBoxService(BaseDebridService):
 
         debrid_logger.error(f"Failed after {settings.DEBRID_MAX_RETRIES} attempts")
         return "FATAL_ERROR"
+
 
 # ===========================
 # Singleton Instance

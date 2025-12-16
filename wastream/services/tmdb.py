@@ -1,7 +1,8 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from wastream.utils.http_client import http_client
 from wastream.config.settings import settings
 from wastream.utils.logger import metadata_logger
+
 
 # ===========================
 # TMDB Service Class
@@ -116,6 +117,16 @@ class TMDBService:
                         if 210024 in keyword_ids:
                             content_type = "anime"
 
+                    seasons_data = []
+                    for season in details.get("seasons", []):
+                        season_number = season.get("season_number", 0)
+                        if season_number > 0:
+                            seasons_data.append({
+                                "number": season_number,
+                                "episode_count": season.get("episode_count", 0)
+                            })
+                    seasons_data.sort(key=lambda s: s["number"])
+
                     metadata_logger.debug(f"TMDB series: {len(titles)} titles ({content_type})")
                     return {
                         "imdb_id": imdb_id,
@@ -123,7 +134,8 @@ class TMDBService:
                         "titles": titles,
                         "year": year,
                         "type": "series",
-                        "content_type": content_type
+                        "content_type": content_type,
+                        "seasons": seasons_data
                     }
 
             metadata_logger.debug(f"No TMDB metadata: {imdb_id}")
@@ -143,12 +155,14 @@ class TMDBService:
             }
         return None
 
-    async def get_seasons_episode_count(self, imdb_id: str, tmdb_api_token: str) -> Optional[Dict]:
+    async def get_seasons_episode_count(self, imdb_id: str, tmdb_api_token: str) -> Optional[List[Dict]]:
         if not tmdb_api_token or not tmdb_api_token.strip():
             metadata_logger.error("Empty TMDB token")
             return None
 
-        metadata_logger.debug(f"Fetching TMDB seasons: {imdb_id}")
+        if not imdb_id or not imdb_id.strip():
+            metadata_logger.error("Empty IMDB ID")
+            return None
 
         headers = {
             "Authorization": f"Bearer {tmdb_api_token}",
@@ -160,10 +174,13 @@ class TMDBService:
             response = await http_client.get(find_url, headers=headers, timeout=settings.METADATA_TIMEOUT)
 
             if response.status_code != 200:
+                metadata_logger.error(f"TMDB API {response.status_code}")
                 return None
 
             data = response.json()
+
             if not data.get("tv_results"):
+                metadata_logger.debug(f"No TV results for IMDB: {imdb_id}")
                 return None
 
             tv_id = data["tv_results"][0]["id"]
@@ -172,13 +189,13 @@ class TMDBService:
             details_response = await http_client.get(details_url, headers=headers, timeout=settings.METADATA_TIMEOUT)
 
             if details_response.status_code != 200:
+                metadata_logger.error(f"TMDB TV details API {details_response.status_code}")
                 return None
 
             details = details_response.json()
-            seasons = details.get("seasons", [])
 
             seasons_data = []
-            for season in seasons:
+            for season in details.get("seasons", []):
                 season_number = season.get("season_number", 0)
                 if season_number > 0:
                     seasons_data.append({
@@ -188,17 +205,13 @@ class TMDBService:
 
             seasons_data.sort(key=lambda s: s["number"])
 
-            metadata_logger.debug(f"TMDB seasons: {len(seasons_data)} for {imdb_id}")
-
-            return {
-                "imdb_id": imdb_id,
-                "tmdb_id": tv_id,
-                "seasons": seasons_data
-            }
+            metadata_logger.debug(f"TMDB seasons: {len(seasons_data)} seasons for {imdb_id}")
+            return seasons_data
 
         except Exception as e:
             metadata_logger.error(f"TMDB seasons fetch error: {type(e).__name__}")
             return None
+
 
 # ===========================
 # Singleton Instance

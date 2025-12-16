@@ -1,9 +1,11 @@
 from typing import Dict, Any
 
+
 # ===========================
 # Quality Sort Constants
 # ===========================
 QUALITY_SORT_KEY_UNKNOWN = 999
+
 
 # ===========================
 # Available Resolutions
@@ -15,6 +17,7 @@ AVAILABLE_RESOLUTIONS = [
     "480p",
     "Unknown"
 ]
+
 
 # ===========================
 # Resolution Extraction
@@ -40,11 +43,12 @@ def extract_resolution(quality: str) -> str:
     else:
         return "Unknown"
 
+
 # ===========================
 # Quality Normalization
 # ===========================
 def normalize_quality(raw_quality: str) -> str:
-    if not raw_quality or raw_quality is None:
+    if not raw_quality:
         return "Unknown"
 
     normalized = str(raw_quality).strip()
@@ -54,13 +58,14 @@ def normalize_quality(raw_quality: str) -> str:
 
     return normalized
 
+
 # ===========================
 # Quality Sort Key
 # ===========================
 def quality_sort_key(item: Dict[str, Any]) -> tuple:
     quality_raw = item.get("quality", "")
 
-    if not quality_raw or quality_raw is None or str(quality_raw).strip().upper() in ["N/A", "NULL", "UNKNOWN", "INCONNU", ""]:
+    if not quality_raw or str(quality_raw).strip().upper() in ["N/A", "NULL", "UNKNOWN", "INCONNU", ""]:
         return (QUALITY_SORT_KEY_UNKNOWN, QUALITY_SORT_KEY_UNKNOWN)
 
     quality_upper = str(quality_raw).strip().upper()

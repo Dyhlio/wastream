@@ -1,13 +1,14 @@
 import asyncio
-from typing import List, Dict, Optional, Any, Tuple
+from typing import List, Dict, Optional, Tuple
 
 from wastream.config.settings import settings
+from wastream.services.tmdb import tmdb_service
 from wastream.utils.helpers import normalize_text, normalize_size, build_display_name
 from wastream.utils.http_client import http_client
 from wastream.utils.languages import combine_languages
 from wastream.utils.logger import scraper_logger
 from wastream.utils.quality import quality_sort_key, normalize_quality
-from wastream.services.tmdb import tmdb_service
+
 
 # ===========================
 # Base Darki API Client Class
@@ -64,7 +65,6 @@ class BaseDarkiAPI:
 
                 for result in results:
                     result_imdb_id = result.get("imdb_id")
-                    result_name = result.get("name", "Unknown")
 
                     if result_imdb_id and result_imdb_id == target_imdb_id:
                         scraper_logger.debug(f"Found match by IMDB ID: {result.get('name')} (ID: {result.get('id')})")
@@ -80,13 +80,13 @@ class BaseDarkiAPI:
         return None
 
     async def _search_by_name(self, titles: List[str], metadata: Dict) -> Optional[Dict]:
-        target_year = metadata.get("year")
-
         if metadata.get("all_titles"):
             normalized_targets = [normalize_text(t) for t in metadata["all_titles"]]
         else:
             normalized_targets = [normalize_text(t) for t in titles]
         headers = self._get_headers()
+
+        kitsu_year = metadata.get("year")
 
         for search_title in titles:
             try:
@@ -120,11 +120,27 @@ class BaseDarkiAPI:
                     result_name = result.get("name", "")
                     result_name_normalized = normalize_text(result_name)
 
-                    if result_name_normalized in normalized_targets:
-                        scraper_logger.debug(f"Kitsu match by name: {result_name} [ID: {result.get('id')}]")
-                        return result
+                    if result_name_normalized not in normalized_targets:
+                        continue
 
-                scraper_logger.debug(f"No name match for '{search_title}'")
+                    darki_year = result.get("year")
+
+                    if not darki_year:
+                        scraper_logger.debug(f"Darki year missing for '{result_name}', skipping")
+                        continue
+
+                    if not kitsu_year:
+                        scraper_logger.debug("Kitsu year missing, skipping")
+                        continue
+
+                    if str(kitsu_year) != str(darki_year):
+                        scraper_logger.debug(f"Year mismatch: Kitsu {kitsu_year} vs Darki {darki_year}")
+                        continue
+
+                    scraper_logger.debug(f"Kitsu match by name + year: {result_name} ({darki_year}) [ID: {result.get('id')}]")
+                    return result
+
+                scraper_logger.debug(f"No name + year match for '{search_title}'")
 
             except Exception as e:
                 scraper_logger.error(f"Kitsu '{search_title}' search error: {type(e).__name__}")
@@ -279,8 +295,8 @@ class BaseDarkiAPI:
             return None
 
     async def search_content(self, title: str, year: Optional[str] = None,
-                            metadata: Optional[Dict] = None, content_type: str = "movie",
-                            season: Optional[str] = None, episode: Optional[str] = None, config: Optional[Dict] = None) -> List[Dict]:
+                             metadata: Optional[Dict] = None, content_type: str = "movie",
+                             season: Optional[str] = None, episode: Optional[str] = None, config: Optional[Dict] = None) -> List[Dict]:
         content_names = {"movie": "movie", "series": "series", "anime": "anime"}
         content_name = content_names.get(content_type, "content")
 
@@ -551,28 +567,59 @@ class BaseDarkiAPI:
             scraper_logger.error(f"Title details error: {type(e).__name__}")
             return None
 
-    async def map_kitsu_absolute_to_darki_season(self, absolute_episode: int, imdb_id: Optional[str] = None, tmdb_api_token: Optional[str] = None) -> Optional[Tuple[str, str]]:
-        if not imdb_id or not tmdb_api_token:
-            scraper_logger.debug("No imdb_id or tmdb_api_token for mapping")
+    async def map_kitsu_absolute_to_darki_season(self, title_id: int, absolute_episode: int, tmdb_api_token: Optional[str] = None) -> Optional[Tuple[str, str]]:
+        details = await self.get_title_details(title_id)
+
+        if not details:
+            scraper_logger.debug("No title details for mapping")
             return None
 
-        tmdb_data = await tmdb_service.get_seasons_episode_count(imdb_id, tmdb_api_token)
+        title_data = details.get("title", {})
+        imdb_id = title_data.get("imdb_id")
 
-        if not tmdb_data or not tmdb_data.get("seasons"):
-            scraper_logger.debug("No TMDB seasons data for mapping")
+        if imdb_id and imdb_id in settings.DARKI_KITSU_TMDB_MAPPING and tmdb_api_token:
+            scraper_logger.debug(f"Using TMDB mapping for {imdb_id}")
+
+            tmdb_seasons = await tmdb_service.get_seasons_episode_count(imdb_id, tmdb_api_token)
+
+            if tmdb_seasons:
+                episode_counter = 0
+
+                for season in tmdb_seasons:
+                    season_number = season.get("number")
+                    episode_count = season.get("episode_count", 0)
+
+                    if episode_counter + episode_count >= absolute_episode:
+                        episode_in_season = absolute_episode - episode_counter
+
+                        scraper_logger.debug(f"Kitsu episode {absolute_episode} (absolute) → TMDB S{season_number}E{episode_in_season}")
+                        return (str(season_number), str(episode_in_season))
+
+                    episode_counter += episode_count
+
+                scraper_logger.debug(f"Episode {absolute_episode} exceeds TMDB total ({episode_counter})")
+                return None
+
+        seasons_data = details.get("seasons", {})
+        seasons = seasons_data.get("data", [])
+
+        if not seasons:
+            scraper_logger.debug("No seasons data found")
             return None
 
-        seasons = tmdb_data["seasons"]
+        regular_seasons = [s for s in seasons if s.get("number", 0) > 0]
+        regular_seasons.sort(key=lambda s: s.get("number", 0))
+
         episode_counter = 0
 
-        for season in seasons:
+        for season in regular_seasons:
             season_number = season.get("number")
-            episode_count = season.get("episode_count", 0)
+            episode_count = season.get("episodes_count", 0)
 
             if episode_counter + episode_count >= absolute_episode:
                 episode_in_season = absolute_episode - episode_counter
 
-                scraper_logger.debug(f"Kitsu episode {absolute_episode} (absolute) → S{season_number}E{episode_in_season}")
+                scraper_logger.debug(f"Kitsu episode {absolute_episode} (absolute) → Darki S{season_number}E{episode_in_season}")
                 return (str(season_number), str(episode_in_season))
 
             episode_counter += episode_count

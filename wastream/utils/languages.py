@@ -6,8 +6,8 @@ LANGUAGES = {
     "Bengali": ["bengali"],
     "Chinese": ["chinese"],
     "English": ["english"],
-    "French": ["french", "vf", "vostfr", "truefrench"],
-    "French (Canada)": ["french (canada)"],
+    "French": ["french", "vf", "vff", "vostfr", "truefrench"],
+    "French (Canada)": ["french (canada)", "vfq"],
     "FRENCH AD": ["french ad"],
     "German": ["german"],
     "Hindi": ["hindi"],
@@ -122,6 +122,7 @@ LANGUAGES = {
     "Unknown": ["unknown"],
 }
 
+
 # ===========================
 # Reverse Language Mapping
 # ===========================
@@ -130,10 +131,12 @@ for standard_lang, variants in LANGUAGES.items():
     for variant in variants:
         LANGUAGE_MAPPING[variant.lower()] = standard_lang
 
+
 # ===========================
 # Available Languages
 # ===========================
 AVAILABLE_LANGUAGES = sorted(list(LANGUAGES.keys()))
+
 
 # ===========================
 # Multi-Language Constants
@@ -141,11 +144,12 @@ AVAILABLE_LANGUAGES = sorted(list(LANGUAGES.keys()))
 MULTI_LANGUAGE_PREFIX = "multi ("
 MULTI_PREFIX_LENGTH = len(MULTI_LANGUAGE_PREFIX)
 
+
 # ===========================
 # Language Normalization
 # ===========================
 def normalize_language(raw_language: str) -> str:
-    if not raw_language or raw_language is None:
+    if not raw_language:
         return "Unknown"
 
     normalized = raw_language.lower().strip()
@@ -165,35 +169,6 @@ def normalize_language(raw_language: str) -> str:
 
     return "Unknown"
 
-# ===========================
-# Subtitle Normalization
-# ===========================
-def normalize_subtitle(raw_subtitle: str) -> str:
-    return normalize_language(raw_subtitle)
-
-# ===========================
-# Multi-Languages Normalization
-# ===========================
-def normalize_multi_languages(languages_list: list) -> str:
-    if not languages_list:
-        return "Unknown"
-
-    normalized_languages = []
-    for lang_dict in languages_list:
-        if isinstance(lang_dict, dict):
-            lang_name = lang_dict.get("name", "")
-            if lang_name:
-                normalized = normalize_language(lang_name)
-                if normalized and normalized != "Unknown":
-                    normalized_languages.append(normalized)
-
-    return ", ".join(normalized_languages) if normalized_languages else "Unknown"
-
-# ===========================
-# Multi-Subtitles Normalization
-# ===========================
-def normalize_multi_subtitles(subtitles_list: list) -> str:
-    return normalize_multi_languages(subtitles_list)
 
 # ===========================
 # Language Combination

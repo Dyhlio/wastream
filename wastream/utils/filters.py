@@ -3,6 +3,7 @@ from wastream.utils.logger import stream_logger
 from wastream.utils.quality import extract_resolution
 from wastream.utils.helpers import parse_size_to_gb
 
+
 # ===========================
 # Language Filtering
 # ===========================
@@ -35,6 +36,7 @@ def filter_by_languages(results: List[Dict], user_languages: List[str]) -> List[
     stream_logger.debug(f"Language filter: {len(results)} → {len(filtered_results)}")
     return filtered_results
 
+
 # ===========================
 # Resolution Filtering
 # ===========================
@@ -51,6 +53,7 @@ def filter_by_resolutions(results: List[Dict], user_resolutions: List[str]) -> L
 
     stream_logger.debug(f"Resolution filter: {len(results)} → {len(filtered_results)}")
     return filtered_results
+
 
 # ===========================
 # Results Limiting Per Resolution
@@ -77,6 +80,7 @@ def limit_results_per_resolution(results: List[Dict], max_per_resolution: int) -
     stream_logger.debug(f"Limit per resolution ({max_per_resolution}): {len(results)} → {len(limited_results)}")
     return limited_results
 
+
 # ===========================
 # Maximum Size Filtering
 # ===========================
@@ -100,6 +104,7 @@ def filter_by_max_size(results: List[Dict], max_size_gb: float) -> List[Dict]:
     stream_logger.debug(f"Max size filter ({max_size_gb} GB): {len(results)} → {len(filtered_results)}")
     return filtered_results
 
+
 # ===========================
 # Archive Files Filtering
 # ===========================
@@ -120,6 +125,7 @@ def filter_archive_files(streams: List[Dict]) -> List[Dict]:
 
     stream_logger.debug(f"Archive filter: {len(streams)} → {len(filtered_streams)}")
     return filtered_streams
+
 
 # ===========================
 # Excluded Keywords Filtering
@@ -145,6 +151,7 @@ def filter_excluded_keywords(streams: List[Dict], excluded_keywords: List[str]) 
             filtered_streams.append(stream)
 
     return filtered_streams
+
 
 # ===========================
 # All Filters Application

@@ -9,6 +9,7 @@ from wastream.utils.http_client import http_client
 from wastream.utils.logger import scraper_logger
 from wastream.utils.quality import quality_sort_key
 
+
 # ===========================
 # Anime Scraper Class
 # ===========================
@@ -75,7 +76,6 @@ class AnimeScraper(BaseWawacity):
                     for quality_node in other_qualities:
                         quality_link = quality_node.attributes.get("href", "")
                         if quality_link and quality_link not in visited_pages:
-                            button_text = quality_node.text(strip=True)
                             pages_to_process.append(quality_link)
 
             all_anime_pages = [{"page_path": page} for page in visited_pages]
@@ -96,6 +96,7 @@ class AnimeScraper(BaseWawacity):
             scraper_logger.error(f"Anime episodes extraction error: {type(e).__name__}")
 
         return all_results
+
 
 # ===========================
 # Singleton Instance

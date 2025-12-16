@@ -1,8 +1,9 @@
-from typing import Optional, Dict, Any
+from typing import Optional
 
 import httpx
 
 from wastream.config.settings import settings
+
 
 # ===========================
 # HTTP Client Singleton
@@ -41,6 +42,7 @@ class HTTPClient:
         if self._client:
             await self._client.aclose()
             self._client = None
+
 
 # ===========================
 # Global HTTP Client Instance

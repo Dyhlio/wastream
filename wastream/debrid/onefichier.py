@@ -8,47 +8,13 @@ from wastream.utils.http_client import http_client
 from wastream.utils.logger import debrid_logger, cache_logger
 from wastream.utils.quality import quality_sort_key
 
-# ===========================
-# Premiumize Error Constants
-# ===========================
-RETRY_MESSAGES = [
-    "Fair use limit reached!",
-    "maximum of 25 active downloads"
-]
-
-LINK_DOWN_MESSAGES = [
-    "not found",
-    "not available",
-    "offline"
-]
-
 
 # ===========================
-# Premiumize Service Class
+# 1fichier Service Class
 # ===========================
-class PremiumizeService(BaseDebridService):
+class OneFichierService(BaseDebridService):
     def get_service_name(self) -> str:
-        return "Premiumize"
-
-    def _handle_api_error(
-        self,
-        message: str,
-        attempt: int
-    ) -> str:
-        message_lower = message.lower()
-
-        if any(kw in message_lower for kw in LINK_DOWN_MESSAGES):
-            debrid_logger.debug(f"LINK_DOWN: {message}")
-            return "LINK_DOWN"
-
-        if any(kw in message for kw in RETRY_MESSAGES):
-            debrid_logger.error(f"RETRY: {message}")
-            if attempt >= settings.DEBRID_MAX_RETRIES - 1:
-                return "RETRY_ERROR"
-            return "RETRY"
-
-        debrid_logger.error(f"Fatal: {message}")
-        return "FATAL_ERROR"
+        return "1fichier"
 
     async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float, user_season: Optional[str] = None, user_episode: Optional[str] = None, user_hosts: Optional[List[str]] = None) -> List[Dict]:
         start_time = time.time()
@@ -58,7 +24,7 @@ class PremiumizeService(BaseDebridService):
                 result["cache_status"] = "uncached"
             return results
 
-        supported_hosts = user_hosts if user_hosts else settings.PREMIUMIZE_SUPPORTED_HOSTS
+        supported_hosts = user_hosts if user_hosts else settings.ONEFICHIER_SUPPORTED_HOSTS
 
         initial_count = len(results)
         filtered_results = []
@@ -70,7 +36,7 @@ class PremiumizeService(BaseDebridService):
                 filtered_results.append(result)
 
         if len(filtered_results) < initial_count:
-            debrid_logger.debug(f"Filtered: {initial_count} → {len(filtered_results)} links (Premiumize: Darki-API only, DDL only)")
+            debrid_logger.debug(f"Filtered: {initial_count} -> {len(filtered_results)} links (1fichier hosts only)")
 
         if not filtered_results:
             debrid_logger.debug("No supported hosts")
@@ -99,20 +65,29 @@ class PremiumizeService(BaseDebridService):
             debrid_logger.error("Empty API key")
             return "FATAL_ERROR"
 
-        debrid_logger.debug(f"Converting: {link}")
+        cleaned_link = link
+        if "&af=" in cleaned_link:
+            cleaned_link = cleaned_link.split("&af=")[0]
+
+        debrid_logger.debug(f"Converting: {cleaned_link}")
 
         http_error_count = 0
 
         for attempt in range(settings.DEBRID_MAX_RETRIES):
             try:
-                response = await http_client.get(
-                    f"{settings.PREMIUMIZE_API_URL}/transfer/directdl",
-                    params={"apikey": api_key, "src": link},
+                response = await http_client.post(
+                    f"{settings.ONEFICHIER_API_URL}/download/get_token.cgi",
+                    json={"url": cleaned_link, "inline": 1},
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                        "User-Agent": settings.ADDON_NAME
+                    },
                     timeout=settings.HTTP_TIMEOUT
                 )
 
                 should_retry, http_error_count = await self._handle_http_retry_error(
-                    response, http_error_count, "PREMIUMIZE",
+                    response, http_error_count, "1FICHIER",
                     settings.DEBRID_HTTP_ERROR_RETRY_DELAY, settings.DEBRID_HTTP_ERROR_MAX_RETRIES
                 )
                 if should_retry:
@@ -127,13 +102,17 @@ class PremiumizeService(BaseDebridService):
                     debrid_logger.error("Invalid API key (401)")
                     return "FATAL_ERROR"
 
-                if response.status_code == 402:
-                    debrid_logger.error("Account not premium (402)")
+                if response.status_code == 403:
+                    debrid_logger.error("Premium account required (403)")
                     return "FATAL_ERROR"
 
                 if response.status_code == 404:
-                    debrid_logger.error("Endpoint not found (404)")
-                    return "FATAL_ERROR"
+                    debrid_logger.error("Link not found (404)")
+                    return "LINK_DOWN"
+
+                if response.status_code == 410:
+                    debrid_logger.error("Link removed (410)")
+                    return "LINK_DOWN"
 
                 if response.status_code != 200:
                     debrid_logger.error(f"HTTP {response.status_code}")
@@ -144,21 +123,12 @@ class PremiumizeService(BaseDebridService):
 
                 data = response.json()
 
-                if data.get("status") != "success":
+                if data.get("status") == "KO":
                     message = data.get("message", "Unknown error")
+                    debrid_logger.debug(f"LINK_DOWN: {message}")
+                    return "LINK_DOWN"
 
-                    api_error_result = self._handle_api_error(message, attempt)
-                    if api_error_result == "LINK_DOWN":
-                        return "LINK_DOWN"
-                    elif api_error_result == "FATAL_ERROR":
-                        return "FATAL_ERROR"
-                    elif api_error_result == "RETRY_ERROR":
-                        return "RETRY_ERROR"
-                    elif api_error_result == "RETRY":
-                        await sleep(settings.DEBRID_RETRY_DELAY_SECONDS)
-                        continue
-
-                direct_link = data.get("content", [{}])[0].get("link") if data.get("content") else data.get("location")
+                direct_link = data.get("url")
 
                 if direct_link:
                     debrid_logger.debug("Converted")
@@ -183,4 +153,4 @@ class PremiumizeService(BaseDebridService):
 # ===========================
 # Singleton Instance
 # ===========================
-premiumize_service = PremiumizeService()
+onefichier_service = OneFichierService()

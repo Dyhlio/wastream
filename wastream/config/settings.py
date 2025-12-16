@@ -2,6 +2,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
@@ -26,13 +27,16 @@ class Settings(BaseSettings):
     # Source Configuration
     # ===========================
     WAWACITY_URL: Optional[str] = None
+    FREE_TELECHARGER_URL: Optional[str] = None
     DARKI_API_URL: Optional[str] = None
     DARKI_API_KEY: Optional[str] = None
+    DARKI_KITSU_TMDB_MAPPING: List[str] = ["tt0388629"]
 
     # ===========================
     # Pagination Configuration
     # ===========================
     WAWACITY_MAX_SEARCH_PAGES: Optional[int] = 3
+    FREE_TELECHARGER_MAX_SEARCH_PAGES: Optional[int] = 3
     DARKI_API_MAX_LINK_PAGES: Optional[int] = 5
 
     # ===========================
@@ -47,7 +51,8 @@ class Settings(BaseSettings):
     # Cache Configuration
     # ===========================
     CONTENT_CACHE_TTL: Optional[int] = 3600
-    DEAD_LINK_TTL: Optional[int] = 2592000
+    CONTENT_CACHE_MODE: str = "background"
+    DEAD_LINK_TTL: Optional[int] = -1
 
     # ===========================
     # Lock Configuration
@@ -65,6 +70,7 @@ class Settings(BaseSettings):
     # ===========================
     # Debrid Services Configuration
     # ===========================
+    DEBRID_SERVICES: List[str] = ["alldebrid", "torbox", "premiumize", "1fichier"]
     DEBRID_MAX_RETRIES: Optional[int] = 5
     DEBRID_RETRY_DELAY_SECONDS: int = 4
     STREAM_REQUEST_TIMEOUT: int = 20
@@ -78,21 +84,28 @@ class Settings(BaseSettings):
     ALLDEBRID_API_URL: str = "https://api.alldebrid.com/v4"
     ALLDEBRID_BATCH_SIZE: int = 12
     ALLDEBRID_SUPPORTED_HOSTS: List[str] = ["1fichier", "turbobit", "rapidgator"]
-    ALLDEBRID_SUPPORTED_SOURCES: List[str] = ["wawacity", "darki-api"]
+    ALLDEBRID_SUPPORTED_SOURCES: List[str] = ["wawacity", "free-telecharger", "darki-api"]
 
     # ===========================
     # TorBox Configuration
     # ===========================
     TORBOX_API_URL: str = "https://api.torbox.app/v1/api"
     TORBOX_SUPPORTED_HOSTS: List[str] = ["1fichier", "turbobit", "rapidgator", "dailyuploads", "sendcm", "darkibox"]
-    TORBOX_SUPPORTED_SOURCES: List[str] = ["darki-api"]
+    TORBOX_SUPPORTED_SOURCES: List[str] = ["darki-api", "free-telecharger"]
 
     # ===========================
     # Premiumize Configuration
     # ===========================
     PREMIUMIZE_API_URL: str = "https://www.premiumize.me/api"
     PREMIUMIZE_SUPPORTED_HOSTS: List[str] = ["1fichier", "turbobit", "rapidgator", "dailyuploads"]
-    PREMIUMIZE_SUPPORTED_SOURCES: List[str] = ["darki-api"]
+    PREMIUMIZE_SUPPORTED_SOURCES: List[str] = ["darki-api", "free-telecharger"]
+
+    # ===========================
+    # 1fichier Configuration
+    # ===========================
+    ONEFICHIER_API_URL: str = "https://api.1fichier.com/v1"
+    ONEFICHIER_SUPPORTED_HOSTS: List[str] = ["1fichier"]
+    ONEFICHIER_SUPPORTED_SOURCES: List[str] = ["darki-api", "free-telecharger"]
 
     # ===========================
     # TMDB Configuration
@@ -133,7 +146,7 @@ class Settings(BaseSettings):
     # ===========================
     # Field Validators
     # ===========================
-    @field_validator("WAWACITY_URL", "DARKI_API_URL", "PROXY_URL")
+    @field_validator("WAWACITY_URL", "FREE_TELECHARGER_URL", "DARKI_API_URL", "PROXY_URL")
     @classmethod
     def normalize_urls(cls, v):
         if isinstance(v, str):
@@ -156,7 +169,7 @@ class Settings(BaseSettings):
         return {
             "id": self.ADDON_ID,
             "name": self.ADDON_NAME,
-            "version": "2.4.0",
+            "version": "2.5.0",
             "description": "Stremio addon to convert DDL to streams via debrid services",
             "catalogs": [],
             "resources": ["stream"],

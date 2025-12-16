@@ -1,6 +1,6 @@
 import asyncio
 import re
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional
 
 from selectolax.parser import HTMLParser, Node
 
@@ -17,6 +17,8 @@ from wastream.utils.quality import quality_sort_key
 # Constants
 # ===========================
 WAWACITY_SEARCH_MAX_LENGTH = 31
+CONTENT_NAME_MAPPING = {"movies": "movie", "films": "movie", "series": "series", "anime": "anime", "mangas": "anime"}
+
 
 # ===========================
 # Base Wawacity Scraper Class
@@ -27,7 +29,7 @@ class BaseWawacity:
     def extract_link_from_node(node: Node) -> Optional[str]:
         link = None
         attributes = node.attributes
-        
+
         if "href" in attributes:
             link = attributes["href"]
         else:
@@ -50,24 +52,23 @@ class BaseWawacity:
             titles_to_try = metadata["titles"]
         else:
             titles_to_try = [title]
-        
+
         for search_title in titles_to_try:
             result = await self.try_search_with_title(search_title, year, metadata, content_type)
             if result:
                 return result
-        
+
         if year:
             scraper_logger.debug(f"No results found with year {year}, retrying without year...")
             for search_title in titles_to_try:
                 result = await self.try_search_with_title(search_title, None, metadata, content_type)
                 if result:
                     return result
-        
-        content_name_mapping = {"movies": "movie", "films": "movie", "series": "series", "anime": "anime", "mangas": "anime"}
-        content_name = content_name_mapping.get(content_type, "content")
+
+        content_name = CONTENT_NAME_MAPPING.get(content_type, "content")
         scraper_logger.debug(f"[Wawacity] No {content_name} found for any title variants of '{title}'")
         return None
-    
+
     async def try_search_with_title(self, search_title: str, year: Optional[str], metadata: Optional[Dict], default_content_type: str) -> Optional[Dict]:
         if not settings.WAWACITY_URL:
             scraper_logger.error("settings.WAWACITY_URL not configured")
@@ -82,9 +83,9 @@ class BaseWawacity:
         search_url = f"{settings.WAWACITY_URL}/?p={wawacity_content_type}&search={encoded_title}"
         if year:
             search_url += f"&year={str(year)}"
-        
+
         scraper_logger.debug(f"Trying search: {search_url}")
-        
+
         try:
             response = await http_client.get(search_url)
             if response.status_code != 200:
@@ -105,43 +106,43 @@ class BaseWawacity:
                 return None
 
             scraper_logger.debug(f"Found {len(search_nodes)} results for '{search_title}'")
-            
+
+            tmdb_year = metadata.get("year") if metadata else year
             if metadata and metadata.get("titles"):
-                verified_result = await self.verify_content_results(search_nodes, metadata, search_title, year, content_type)
+                verified_result = await self.verify_content_results(search_nodes, metadata, search_title, tmdb_year, content_type)
             else:
                 simple_metadata = {
                     "titles": [normalize_text(search_title)]
                 }
-                verified_result = await self.verify_content_results(search_nodes, simple_metadata, search_title, year, content_type)
+                verified_result = await self.verify_content_results(search_nodes, simple_metadata, search_title, tmdb_year, content_type)
 
             if verified_result:
                 return verified_result
             else:
                 scraper_logger.debug("No verified result found")
                 return None
-            
+
         except Exception as e:
             scraper_logger.error(f"Title '{search_title}' search error: {type(e).__name__}")
             return None
-    
+
     async def verify_content_results(self, search_nodes, metadata: Dict, search_title: str = "", year: Optional[str] = None, content_type: str = "films") -> Optional[Dict]:
         try:
             if metadata.get("all_titles"):
                 tmdb_titles = [normalize_text(t) for t in metadata["all_titles"]]
             else:
                 tmdb_titles = [normalize_text(t) for t in metadata["titles"]]
-            
+
             content_data = self.extract_content_from_search_page(search_nodes, content_type)
 
             for content in content_data:
                 content_title = content.get("title", "Unknown")
 
-                result = self.progressive_verification_from_search(content, tmdb_titles)
+                result = self.progressive_verification_from_search(content, tmdb_titles, year)
 
                 if result:
                     tmdb_title = metadata.get("titles", [search_title])[0].title() if metadata.get("titles") else search_title.title()
-                    content_name_mapping = {"movies": "movie", "films": "movie", "series": "series", "anime": "anime", "mangas": "anime"}
-                    content_name = content_name_mapping.get(content_type, "content")
+                    content_name = CONTENT_NAME_MAPPING.get(content_type, "content")
                     scraper_logger.debug(f"Found match: {content_title} (link: {content['link']})")
                     scraper_logger.debug(f"[Wawacity] Found {content_name}: '{tmdb_title}'")
                     return {
@@ -158,11 +159,11 @@ class BaseWawacity:
                     return page_result
 
             return None
-            
+
         except Exception as e:
             scraper_logger.error(f"Content verification error: {type(e).__name__}")
             return None
-    
+
     async def try_page_verification(self, search_title: str, year: Optional[str], tmdb_titles: list, page_num: int, content_type: str, metadata: Optional[Dict] = None) -> Optional[Dict]:
         if not settings.WAWACITY_URL:
             return None
@@ -175,9 +176,9 @@ class BaseWawacity:
             search_url = f"{settings.WAWACITY_URL}/?p={wawacity_content_type}&search={encoded_title}&page={page_num}"
             if year:
                 search_url += f"&year={str(year)}"
-            
+
             scraper_logger.debug(f"Trying page {page_num}: {search_url}")
-            
+
             response = await http_client.get(search_url)
             if response.status_code != 200:
                 return None
@@ -190,7 +191,7 @@ class BaseWawacity:
             else:
                 css_selector = 'a[href^="?p=manga&id="]'
             search_nodes = parser.css(css_selector)
-            
+
             if not search_nodes:
                 scraper_logger.debug(f"No results on page {page_num}")
                 return None
@@ -202,48 +203,48 @@ class BaseWawacity:
             for content in content_data:
                 content_title = content.get("title", "Unknown")
 
-                result = self.progressive_verification_from_search(content, tmdb_titles)
+                result = self.progressive_verification_from_search(content, tmdb_titles, year)
 
                 if result:
                     tmdb_title = metadata.get("titles", [search_title])[0].title() if metadata and metadata.get("titles") else search_title.title()
-                    content_name_mapping = {"movies": "movie", "films": "movie", "series": "series", "anime": "anime", "mangas": "anime"}
-                    content_name = content_name_mapping.get(content_type, "content")
+                    content_name = CONTENT_NAME_MAPPING.get(content_type, "content")
                     scraper_logger.debug(f"Found match on page {page_num}: {content_title}")
                     scraper_logger.debug(f"[Wawacity] Found {content_name} on page {page_num}: '{tmdb_title}'")
                     return {
                         "link": content["link"],
                         "text": content["title"]
                     }
-            
+
             return None
-            
+
         except Exception as e:
             scraper_logger.error(f"Page {page_num} search error: {type(e).__name__}")
             return None
-    
+
     def extract_content_from_search_page(self, search_nodes, content_type: str) -> List[Dict]:
         content_list = []
         processed_links = set()
-        
+
         for node in search_nodes:
             try:
                 link = node.attributes.get("href", "")
                 if not link or link in processed_links:
                     continue
-                
+
                 processed_links.add(link)
-                
+
                 parent_block = node.parent
                 while parent_block and "wa-post-detail-item" not in parent_block.attributes.get("class", ""):
                     parent_block = parent_block.parent
-                
+
                 if not parent_block:
                     title = node.text(strip=True)
                     if not title:
                         continue
                     content_list.append({
                         "link": link,
-                        "title": title
+                        "title": title,
+                        "year": None
                     })
                     continue
 
@@ -252,20 +253,34 @@ class BaseWawacity:
 
                 if not title:
                     continue
-                
+
+                year = None
+                year_items = parent_block.css('li')
+                for item in year_items:
+                    span = item.css_first('span')
+                    if span and "Année" in span.text():
+                        year_link = item.css_first('a')
+                        if year_link:
+                            year = year_link.text(strip=True)
+                        else:
+                            year_b = item.css_first('b')
+                            if year_b:
+                                year = year_b.text(strip=True)
+                        break
+
                 content_list.append({
                     "link": link,
-                    "title": title
+                    "title": title,
+                    "year": year
                 })
-                
+
             except Exception as e:
                 scraper_logger.error(f"Content data extraction error: {type(e).__name__}")
                 continue
-        
-        
+
         return content_list
-    
-    def progressive_verification_from_search(self, content_data: Dict, tmdb_titles: list) -> Optional[str]:
+
+    def progressive_verification_from_search(self, content_data: Dict, tmdb_titles: list, tmdb_year: Optional[str] = None) -> Optional[str]:
 
         normalized_title = normalize_text(content_data["title"])
 
@@ -275,12 +290,27 @@ class BaseWawacity:
         else:
             title_match = any(tmdb_title == normalized_title for tmdb_title in tmdb_titles)
 
-        return "TITLE_MATCH" if title_match else None
-    
+        if not title_match:
+            return None
+
+        wawacity_year = content_data.get("year")
+        if not wawacity_year:
+            scraper_logger.debug("Wawacity year missing, skipping")
+            return None
+
+        if not tmdb_year:
+            scraper_logger.debug("TMDB year missing, skipping")
+            return None
+
+        if tmdb_year != wawacity_year:
+            scraper_logger.debug(f"Year mismatch: TMDB {tmdb_year} vs Wawacity {wawacity_year}")
+            return None
+
+        return "TITLE_MATCH"
+
     async def search_content(self, title: str, year: Optional[str] = None,
-                           metadata: Optional[Dict] = None, content_type: str = "films") -> List[Dict]:
-        content_names = {"films": "movie", "movies": "movie", "series": "series", "mangas": "anime", "anime": "anime"}
-        content_name = content_names.get(content_type, "content")
+                             metadata: Optional[Dict] = None, content_type: str = "films") -> List[Dict]:
+        content_name = CONTENT_NAME_MAPPING.get(content_type, "content")
 
         try:
             search_result = await self.search_content_by_titles(title, year, metadata, content_type)
@@ -288,7 +318,7 @@ class BaseWawacity:
                 scraper_logger.debug(f"{content_name.title()} not found")
                 return []
 
-            if content_names.get(content_type) == "movie":
+            if CONTENT_NAME_MAPPING.get(content_type) == "movie":
                 results = await self._extract_movie_content(search_result, title, year)
             else:
                 results = await self._extract_series_content(search_result, title, year)
@@ -310,23 +340,23 @@ class BaseWawacity:
         quality_pages.append({"page_path": page_link})
 
         movie_url = f"{settings.WAWACITY_URL}/{page_link}"
-        
+
         try:
             response = await http_client.get(movie_url)
             if response.status_code == 200:
                 parser = HTMLParser(response.text)
                 quality_nodes = parser.css('a[href^="?p=film&id="]:has(button)')
-                
+
                 for node in quality_nodes:
                     page_path = node.attributes.get("href", "")
                     if page_path and {"page_path": page_path} not in quality_pages:
                         quality_pages.append({"page_path": page_path})
         except Exception as e:
             scraper_logger.error(f"Quality pages extraction error: {type(e).__name__}")
-        
+
         tasks = [self._extract_movie_links_for_quality(quality, title, year) for quality in quality_pages]
         results_lists = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         all_results = []
         for result in results_lists:
             if isinstance(result, list):
@@ -348,37 +378,37 @@ class BaseWawacity:
         try:
             visited_pages = set()
             pages_to_process = [content_link]
-            
+
             while pages_to_process:
                 current_link = pages_to_process.pop(0)
-                
+
                 if current_link in visited_pages:
                     continue
-                    
+
                 visited_pages.add(current_link)
                 current_url = f"{settings.WAWACITY_URL}/{current_link}"
-                
+
                 response = await http_client.get(current_url)
                 if response.status_code == 200:
                     parser = HTMLParser(response.text)
-                    
+
                     other_seasons = parser.css('ul.wa-post-list-ofLinks a[href^="?p=serie&id="], ul.wa-post-list-ofLinks a[href^="?p=manga&id="]')
                     for season_node in other_seasons:
                         season_link = season_node.attributes.get("href", "")
                         if season_link and "saison" in season_link.lower() and season_link not in visited_pages:
                             pages_to_process.append(season_link)
-                    
+
                     other_qualities = parser.css('ul.wa-post-list-ofLinks a[href^="?p=serie&id="]:has(button), ul.wa-post-list-ofLinks a[href^="?p=manga&id="]:has(button)')
                     for quality_node in other_qualities:
                         quality_link = quality_node.attributes.get("href", "")
                         if quality_link and quality_link not in visited_pages:
                             pages_to_process.append(quality_link)
-            
+
             all_pages = [{"page_path": page} for page in visited_pages]
-            
+
             page_tasks = [self._extract_episodes_from_page(page, title, year) for page in all_pages]
             page_results = await asyncio.gather(*page_tasks, return_exceptions=True)
-            
+
             for result in page_results:
                 if isinstance(result, list):
                     all_results.extend(result)
@@ -402,15 +432,15 @@ class BaseWawacity:
         page_results = []
         page_path = page_info["page_path"]
         full_url = f"{settings.WAWACITY_URL}/{page_path}"
-        
+
         try:
             response = await http_client.get(full_url)
             if response.status_code == 200:
                 parser = HTMLParser(response.text)
-                
+
                 link_rows = parser.css('#DDLLinkѕ tr.link-row:nth-child(n+2)')
                 filtered_rows = self.filter_nodes(link_rows, r"Lien .*")
-                
+
                 for row in filtered_rows:
                     hoster_cell = row.css_first('td[width="120px"].text-center')
                     hoster_name = hoster_cell.text().strip() if hoster_cell else ""
@@ -418,11 +448,11 @@ class BaseWawacity:
                     size_td = row.css_first('td[width="80px"].text-center')
                     raw_size = size_td.text().strip() if size_td else "Unknown"
                     file_size = normalize_size(raw_size)
-                    
+
                     link_node = row.css_first('a[href*="dl-protect."].link')
                     if not link_node:
                         continue
-                    
+
                     link_url = self.extract_link_from_node(link_node)
                     if not link_url:
                         continue
@@ -443,9 +473,7 @@ class BaseWawacity:
                                 original_filename = decoded_filename
                                 if "Saison" not in decoded_filename and "Épisode" in decoded_filename:
                                     decoded_filename = decoded_filename.replace(" - Épisode", f" - Saison {season_from_url} Épisode")
-                                else:
-                                    pass
-                            
+
                             if content_type == "movie":
                                 content_info = parse_movie_info(decoded_filename)
                                 original_filename = link_text.split(":")[-1].strip() if ":" in link_text else decoded_filename
@@ -489,13 +517,13 @@ class BaseWawacity:
                     except Exception as e:
                         error_type = "movie" if content_type == "movie" else "episode"
                         scraper_logger.error(f"Error processing {error_type} link {link_url}: {type(e).__name__}")
-                        
+
         except Exception as e:
             error_type = "movie links" if content_type == "movie" else "episodes"
             scraper_logger.error(f"Failed to extract {error_type} from {page_path}: {type(e).__name__}")
-        
+
         return page_results
-    
+
     async def _extract_movie_links_for_quality(self, quality_page: Dict, title: str, year: Optional[str] = None) -> List[Dict]:
         return await self._extract_links_from_page(quality_page, "movie", title, year)
 

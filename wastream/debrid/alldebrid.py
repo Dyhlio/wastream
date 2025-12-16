@@ -21,6 +21,7 @@ RETRY_ERRORS = [
     "REDIRECTOR_ERROR",
 ]
 
+
 # ===========================
 # AllDebrid Service Class
 # ===========================
@@ -161,7 +162,7 @@ class AllDebridService(BaseDebridService):
                 break
 
             batch = links[i:i + batch_size]
-            cache_logger.debug(f"Batch {i//batch_size + 1} ({len(batch)} links)")
+            cache_logger.debug(f"Batch {i // batch_size + 1} ({len(batch)} links)")
 
             batch_tasks = [
                 self.check_cache_single_link(link_dict.get("link"), api_key)
@@ -193,7 +194,7 @@ class AllDebridService(BaseDebridService):
 
         return results
 
-    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float, user_season: Optional[str] = None, user_episode: Optional[str] = None) -> List[Dict]:
+    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float, user_season: Optional[str] = None, user_episode: Optional[str] = None, user_hosts: Optional[List[str]] = None) -> List[Dict]:
         start_time = time.time()
 
         if not api_key or not results:
@@ -201,13 +202,15 @@ class AllDebridService(BaseDebridService):
                 result["cache_status"] = "uncached"
             return results
 
+        supported_hosts = user_hosts if user_hosts else settings.ALLDEBRID_SUPPORTED_HOSTS
+
         initial_count = len(results)
         filtered_results = []
         for result in results:
             if result.get("model_type") == "nzb":
                 continue
             hoster = result.get("hoster", "").lower()
-            if any(supported_host in hoster for supported_host in settings.ALLDEBRID_SUPPORTED_HOSTS):
+            if any(supported_host in hoster for supported_host in supported_hosts):
                 filtered_results.append(result)
 
         if len(filtered_results) < initial_count:
@@ -479,6 +482,7 @@ class AllDebridService(BaseDebridService):
 
         debrid_logger.error(f"Failed after {settings.DEBRID_MAX_RETRIES} attempts")
         return "FATAL_ERROR"
+
 
 # ===========================
 # Singleton Instance

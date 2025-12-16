@@ -15,6 +15,7 @@ from wastream.utils.logger import database_logger
 # ===========================
 database = Database(settings.get_database_url())
 
+
 # ===========================
 # Database Setup
 # ===========================
@@ -68,6 +69,7 @@ async def setup_database():
         database_logger.error(f"Setup failed: {type(e).__name__}")
         raise
 
+
 # ===========================
 # Cleanup Expired Data
 # ===========================
@@ -82,7 +84,7 @@ async def cleanup_expired_data():
             )
 
             deleted_links = await database.execute(
-                "DELETE FROM dead_links WHERE expires_at < :current_time",
+                "DELETE FROM dead_links WHERE expires_at > 0 AND expires_at < :current_time",
                 {"current_time": current_time}
             )
 
@@ -99,6 +101,7 @@ async def cleanup_expired_data():
 
         await asyncio.sleep(settings.CLEANUP_INTERVAL)
 
+
 # ===========================
 # Dead Link Checking
 # ===========================
@@ -106,21 +109,31 @@ async def is_dead_link(url: str) -> bool:
     try:
         current_time = int(time.time())
         result = await database.fetch_one(
-            "SELECT 1 FROM dead_links WHERE url = :url AND expires_at > :current_time",
-            {"url": url, "current_time": current_time}
+            "SELECT expires_at FROM dead_links WHERE url = :url",
+            {"url": url}
         )
-        return result is not None
+        if result is None:
+            return False
+
+        expires_at = result[0]
+        if expires_at == -1:
+            return True
+        return expires_at > current_time
     except Exception as e:
         database_logger.error(f"Dead link check failed: {type(e).__name__}")
         return False
+
 
 # ===========================
 # Dead Link Marking
 # ===========================
 async def mark_dead_link(url: str, ttl: int):
     try:
-        current_time = int(time.time())
-        expires_at = current_time + ttl
+        if ttl == -1:
+            expires_at = -1
+        else:
+            current_time = int(time.time())
+            expires_at = current_time + ttl
 
         if settings.DATABASE_TYPE == "sqlite":
             query = "INSERT OR REPLACE INTO dead_links (url, expires_at) VALUES (:url, :expires_at)"
@@ -131,6 +144,7 @@ async def mark_dead_link(url: str, ttl: int):
         await database.execute(query, {"url": url, "expires_at": expires_at})
     except Exception as e:
         database_logger.error(f"Mark dead link failed: {type(e).__name__}")
+
 
 # ===========================
 # Lock Acquisition
@@ -168,6 +182,7 @@ async def acquire_lock(lock_key: str, instance_id: str, duration: int = settings
         database_logger.error(f"Lock attempt failed: {type(e).__name__}")
         return False
 
+
 # ===========================
 # Lock Release
 # ===========================
@@ -180,11 +195,11 @@ async def release_lock(lock_key: str, instance_id: str):
     except Exception as e:
         database_logger.error(f"Failed to release lock: {type(e).__name__}")
 
+
 # ===========================
 # Search Lock Context Manager
 # ===========================
 class SearchLock:
-
     def __init__(self, content_type: str, title: str, year: Optional[str] = None,
                  timeout: Optional[int] = None, retry_interval: float = 1.0):
         lock_key = create_cache_key(content_type, title, year)
@@ -225,6 +240,7 @@ class SearchLock:
         if self.acquired:
             await release_lock(self.lock_key, self.instance_id)
             database_logger.debug(f"Lock released: {self.lock_key[:30]}...")
+
 
 # ===========================
 # Database Teardown

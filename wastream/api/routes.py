@@ -14,10 +14,12 @@ from wastream.utils.logger import api_logger
 from wastream.utils.http_client import http_client
 from wastream.utils.database import database
 
+
 # ===========================
 # Router Instance
 # ===========================
 router = APIRouter()
+
 
 # ===========================
 # Content Type Enum
@@ -26,12 +28,25 @@ class ContentType(str, Enum):
     movie = "movie"
     series = "series"
 
+
+# ===========================
+# Service Type Enum
+# ===========================
+class ServiceType(str, Enum):
+    alldebrid = "alldebrid"
+    torbox = "torbox"
+    premiumize = "premiumize"
+    onefichier = "1fichier"
+    tmdb = "tmdb"
+
+
 # ===========================
 # Web Interface Endpoints
 # ===========================
 @router.get("/", summary="Home", description="Redirects to the configuration page")
 async def root():
     return RedirectResponse("/configure")
+
 
 @router.get("/configure", summary="Configuration", description="Web interface to configure the addon")
 async def configure():
@@ -43,6 +58,7 @@ async def configure():
     html_content = html_content.replace("{{VERSION}}", settings.ADDON_MANIFEST["version"])
 
     return HTMLResponse(content=html_content)
+
 
 @router.get("/{b64config}/configure", summary="Reconfigure", description="Modify existing configuration")
 async def configure_addon(
@@ -57,6 +73,7 @@ async def configure_addon(
 
     return HTMLResponse(content=html_content)
 
+
 # ===========================
 # Stremio Addon Endpoints
 # ===========================
@@ -68,20 +85,27 @@ async def get_manifest(
 
     manifest = settings.ADDON_MANIFEST.copy()
 
-    if config and "debrid_service" in config:
-        debrid_service = config["debrid_service"]
-        if debrid_service == "alldebrid":
-            manifest["name"] = f"{settings.ADDON_NAME} | AD"
-        elif debrid_service == "torbox":
-            manifest["name"] = f"{settings.ADDON_NAME} | TB"
-        elif debrid_service == "premiumize":
-            manifest["name"] = f"{settings.ADDON_NAME} | PM"
+    if config and "debrid_services" in config:
+        debrid_services = config["debrid_services"]
+        if len(debrid_services) == 1:
+            service_name = debrid_services[0].get("service", "alldebrid")
+            if service_name == "alldebrid":
+                manifest["name"] = f"{settings.ADDON_NAME} | AD"
+            elif service_name == "torbox":
+                manifest["name"] = f"{settings.ADDON_NAME} | TB"
+            elif service_name == "premiumize":
+                manifest["name"] = f"{settings.ADDON_NAME} | PM"
+            elif service_name == "1fichier":
+                manifest["name"] = f"{settings.ADDON_NAME} | 1F"
+        elif len(debrid_services) > 1:
+            manifest["name"] = f"{settings.ADDON_NAME} | MULTI"
 
     return JSONResponse(content=manifest)
 
+
 @router.get("/{b64config}/stream/{content_type}/{content_id}",
-           summary="Get streams",
-           description="Returns available streams for the requested content")
+            summary="Get streams",
+            description="Returns available streams for the requested content")
 async def get_streams(
     request: Request,
     b64config: str = Path(..., description="Base64 encoded configuration"),
@@ -92,7 +116,7 @@ async def get_streams(
     if not config:
         api_logger.debug("Invalid config")
         return JSONResponse(content={"streams": []})
-    
+
     content_id_formatted = content_id.replace(".json", "")
     api_logger.debug(f"Stream: {content_type.value}/{content_id_formatted}")
 
@@ -105,27 +129,29 @@ async def get_streams(
             config=config,
             base_url=base_url
         )
-        
+
         return JSONResponse(content={
             "streams": streams,
             "cacheMaxAge": 1
         })
-        
+
     except Exception as e:
         api_logger.error(f"Stream failed: {type(e).__name__}")
         return JSONResponse(content={"streams": []})
+
 
 # ===========================
 # Utility Endpoints
 # ===========================
 @router.get("/resolve",
-           summary="Resolve link",
-           description="Converts a link to a direct streaming URL")
+            summary="Resolve link",
+            description="Converts a link to a direct streaming URL")
 async def resolve(
     link: str = Query(..., description="Link to resolve"),
     b64config: str = Query(..., description="Base64 encoded configuration"),
     season: Optional[str] = Query(None, description="Season number for series"),
-    episode: Optional[str] = Query(None, description="Episode number for series")
+    episode: Optional[str] = Query(None, description="Episode number for series"),
+    service: Optional[str] = Query(None, description="Debrid service to use")
 ):
     api_logger.debug(f"Resolving link: {link[:80]}")
 
@@ -134,68 +160,172 @@ async def resolve(
         api_logger.debug("Invalid config")
         return FileResponse("wastream/public/fatal_error.mp4")
 
-    has_debrid_api_key = config.get("debrid_api_key")
-    if not has_debrid_api_key:
-        api_logger.debug("No debrid API key")
+    debrid_services = config.get("debrid_services", [])
+    if not debrid_services:
+        api_logger.debug("No debrid services configured")
         return FileResponse("wastream/public/fatal_error.mp4")
 
-    return await stream_service.resolve_link_with_response(link, config, season, episode)
+    return await stream_service.resolve_link_with_response(link, config, season, episode, service)
+
 
 # ===========================
 # Configuration Options Endpoints
 # ===========================
 @router.get("/available/languages",
-           summary="Available languages",
-           description="Returns available language options")
+            summary="Available languages",
+            description="Returns available language options")
 async def get_available_languages():
     return JSONResponse(content={
         "languages": AVAILABLE_LANGUAGES
     })
 
+
 @router.get("/available/resolutions",
-           summary="Available resolutions",
-           description="Returns available quality options")
+            summary="Available resolutions",
+            description="Returns available quality options")
 async def get_available_resolutions():
     return JSONResponse(content={
         "resolutions": AVAILABLE_RESOLUTIONS
     })
 
-@router.get("/available/debrid-services",
-           summary="Available services",
-           description="Returns available service providers")
-async def get_available_debrid_services():
+
+@router.get("/available/services",
+            summary="Available services",
+            description="Returns available debrid services with their supported hosts and sources")
+async def get_available_services():
     return JSONResponse(content={
-        "debrid_services": ["alldebrid", "torbox", "premiumize"]
+        "alldebrid": {
+            "hosts": settings.ALLDEBRID_SUPPORTED_HOSTS,
+            "sources": settings.ALLDEBRID_SUPPORTED_SOURCES
+        },
+        "torbox": {
+            "hosts": settings.TORBOX_SUPPORTED_HOSTS,
+            "sources": settings.TORBOX_SUPPORTED_SOURCES
+        },
+        "premiumize": {
+            "hosts": settings.PREMIUMIZE_SUPPORTED_HOSTS,
+            "sources": settings.PREMIUMIZE_SUPPORTED_SOURCES
+        },
+        "1fichier": {
+            "hosts": settings.ONEFICHIER_SUPPORTED_HOSTS,
+            "sources": settings.ONEFICHIER_SUPPORTED_SOURCES
+        }
     })
 
+
 @router.get("/password-config",
-           summary="Password status",
-           description="Checks if password protection is enabled")
+            summary="Password status",
+            description="Checks if password protection is enabled")
 async def get_password_config():
     return JSONResponse(content={
         "password_required": bool(settings.ADDON_PASSWORD.strip())
     })
 
+
 @router.post("/verify-password",
-            summary="Verify password",
-            description="Validates the provided password")
+             summary="Verify password",
+             description="Validates the provided password")
 async def verify_password(password: str = Query(..., description="Password to verify")):
     if not settings.ADDON_PASSWORD.strip():
         return JSONResponse(content={"valid": True})
 
     valid_passwords = [pwd.strip() for pwd in settings.ADDON_PASSWORD.split(",") if pwd.strip()]
     is_valid = password in valid_passwords
-    
+
     return JSONResponse(content={"valid": is_valid})
+
+
+@router.get("/verify-api-key",
+            summary="Verify API key",
+            description="Validates debrid service API key or TMDB token")
+async def verify_api_key(
+    service: ServiceType = Query(..., description="Service"),
+    api_key: str = Query(..., description="API key")
+):
+    if not api_key or not api_key.strip():
+        return JSONResponse(content={"valid": False})
+
+    api_key = api_key.strip()
+
+    try:
+        if service == ServiceType.alldebrid:
+            response = await http_client.get(
+                f"{settings.ALLDEBRID_API_URL}/user",
+                params={"agent": settings.ADDON_NAME, "apikey": api_key},
+                timeout=settings.HEALTH_CHECK_TIMEOUT
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("status") == "success":
+                    return JSONResponse(content={"valid": True})
+            return JSONResponse(content={"valid": False})
+
+        elif service == ServiceType.torbox:
+            response = await http_client.get(
+                f"{settings.TORBOX_API_URL}/user/me",
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=settings.HEALTH_CHECK_TIMEOUT
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    return JSONResponse(content={"valid": True})
+            return JSONResponse(content={"valid": False})
+
+        elif service == ServiceType.premiumize:
+            response = await http_client.get(
+                f"{settings.PREMIUMIZE_API_URL}/account/info",
+                params={"apikey": api_key},
+                timeout=settings.HEALTH_CHECK_TIMEOUT
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("status") == "success":
+                    return JSONResponse(content={"valid": True})
+            return JSONResponse(content={"valid": False})
+
+        elif service == ServiceType.onefichier:
+            response = await http_client.post(
+                f"{settings.ONEFICHIER_API_URL}/folder/ls.cgi",
+                json={"folder_id": 0},
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                    "User-Agent": settings.ADDON_NAME
+                },
+                timeout=settings.HEALTH_CHECK_TIMEOUT
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("status") == "KO":
+                    return JSONResponse(content={"valid": False})
+                return JSONResponse(content={"valid": True})
+            return JSONResponse(content={"valid": False})
+
+        elif service == ServiceType.tmdb:
+            response = await http_client.get(
+                f"{settings.TMDB_API_URL}/configuration",
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=settings.HEALTH_CHECK_TIMEOUT
+            )
+            if response.status_code == 200:
+                return JSONResponse(content={"valid": True})
+            return JSONResponse(content={"valid": False})
+
+        else:
+            return JSONResponse(content={"valid": False})
+
+    except Exception:
+        return JSONResponse(content={"valid": False})
+
 
 # ===========================
 # Health Check Endpoint
 # ===========================
 @router.get("/health",
-           summary="Health check",
-           description="Returns the current health status of the service")
+            summary="Health check",
+            description="Returns the current health status of the service")
 async def health_check():
-    
     start_time = time.time()
     health_status = {
         "status": "healthy",
@@ -203,12 +333,12 @@ async def health_check():
         "timestamp": int(time.time()),
         "checks": {}
     }
-    
+
     health_status["checks"]["server"] = {
         "status": "ok",
         "message": "Addon server running"
     }
-    
+
     try:
         await database.fetch_val("SELECT 1")
         health_status["checks"]["database"] = {
@@ -303,7 +433,7 @@ async def health_check():
             "status": "disabled",
             "message": "Darki-API not configured"
         }
-    
+
     if settings.PROXY_URL:
         try:
             test_response = await http_client.get("https://httpbin.org/ip", timeout=settings.HEALTH_CHECK_TIMEOUT)
@@ -329,8 +459,8 @@ async def health_check():
             "status": "disabled",
             "message": "No proxy configured"
         }
-    
+
     total_time = round((time.time() - start_time) * 1000)
     health_status["total_response_time_ms"] = total_time
-    
+
     return health_status

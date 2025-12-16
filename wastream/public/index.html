@@ -542,6 +542,122 @@
         }
 
         /* ===========================
+           Debrid Services
+           =========================== */
+        #debridServicesContainer {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .debrid-service-entry {
+            background: var(--color-dark-800);
+            border: 1px solid var(--sl-input-border-color);
+            border-radius: var(--sl-border-radius-medium);
+            padding: var(--space-4);
+        }
+
+        .debrid-service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-3);
+        }
+
+        .debrid-service-number {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-orange-500);
+            background: var(--color-orange-100);
+            padding: 2px 10px;
+            border-radius: 12px;
+        }
+
+        .debrid-service-actions {
+            display: flex;
+            gap: var(--space-2);
+        }
+
+        .btn-service-action {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            background: var(--color-dark-700);
+            border: 1px solid var(--color-orange-300);
+            border-radius: var(--radius-sm);
+            color: var(--color-gray-200);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none !important;
+        }
+
+        .btn-service-action:hover {
+            background: var(--color-orange-500);
+            border-color: var(--color-orange-500);
+            color: var(--color-white);
+            transform: scale(1.05);
+        }
+
+        .btn-service-action:active {
+            transform: scale(0.95);
+        }
+
+        .btn-service-action:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-service-action:disabled:hover {
+            background: var(--color-dark-700);
+            border-color: var(--color-orange-300);
+            color: var(--color-gray-200);
+            transform: none;
+        }
+
+        .btn-service-action svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .btn-service-action.btn-remove:hover {
+            background: #EF4444;
+            border-color: #EF4444;
+        }
+
+        .btn-add-service {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            width: 100%;
+            margin-top: var(--space-4);
+            padding: var(--space-3) var(--space-4);
+            background: transparent;
+            border: 2px dashed var(--sl-input-border-color);
+            border-radius: var(--sl-border-radius-medium);
+            color: var(--sl-color-neutral-600);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .btn-add-service:hover {
+            border-color: var(--color-orange-500);
+            color: var(--color-orange-500);
+            background: var(--color-orange-50);
+        }
+
+        .btn-add-service span:first-child {
+            font-size: 20px;
+            font-weight: 300;
+        }
+
+        /* ===========================
            Tags
            =========================== */
         .tags-wrapper {
@@ -1007,16 +1123,42 @@
                     <div class="card-indicator"></div>
                     <h2 class="card-title" data-i18n="sections.service">Service</h2>
                 </div>
-                <div class="form-field">
-                    <sl-select id="debridService" label="Debrid service" value="alldebrid">
-                        <sl-option value="alldebrid">AllDebrid</sl-option>
-                        <sl-option value="torbox">TorBox</sl-option>
-                        <sl-option value="premiumize">Premiumize</sl-option>
-                    </sl-select>
+                <div id="debridServicesContainer">
+                    <div class="debrid-service-entry" data-index="0">
+                        <div class="debrid-service-header">
+                            <span class="debrid-service-number"><span data-i18n="labels.debridService">Debrid service</span> 1</span>
+                            <div class="debrid-service-actions">
+                                <button type="button" class="btn-service-action btn-move-up" title="Move up" disabled><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg></button>
+                                <button type="button" class="btn-service-action btn-move-down" title="Move down" disabled><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></button>
+                                <button type="button" class="btn-service-action btn-remove" title="Remove service" style="display: none;"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <sl-select class="debridServiceSelect" label="Debrid service" value="alldebrid">
+                                <sl-option value="alldebrid">AllDebrid</sl-option>
+                                <sl-option value="torbox">TorBox</sl-option>
+                                <sl-option value="premiumize">Premiumize</sl-option>
+                                <sl-option value="1fichier">1fichier</sl-option>
+                            </sl-select>
+                        </div>
+                        <div class="form-field">
+                            <sl-input class="debridKeyInput" type="text" label="Debrid API Key" placeholder="Your API key"></sl-input>
+                            <span class="field-help"><span data-i18n="help.apiKeyLabel">API Key:</span> <a href="https://alldebrid.com/apikeys" target="_blank" rel="noopener" class="debridLink">alldebrid.com/apikeys</a></span>
+                        </div>
+                        <div class="form-field service-hosts-field">
+                            <sl-select class="hostsSelect" multiple clearable label="Hosts" placeholder="All hosts (default)"></sl-select>
+                            <span class="field-help" data-i18n="help.hostsInfo">Select specific hosts or leave empty for all</span>
+                        </div>
+                        <div class="form-field service-sources-field">
+                            <sl-select class="sourcesSelect" multiple clearable label="Sources" placeholder="All sources (default)"></sl-select>
+                            <span class="field-help" data-i18n="help.sourcesInfo">Select specific sources or leave empty for all</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-field">
-                    <sl-input id="debridKey" type="text" label="Debrid API Key" placeholder="Your API key"></sl-input>
-                    <span class="field-help"><span data-i18n="help.apiKeyLabel">API Key:</span> <a href="https://alldebrid.com/apikeys" target="_blank" rel="noopener" id="debridLink">alldebrid.com/apikeys</a></span>
+                    <button type="button" class="btn-add-service" id="addDebridServiceBtn">
+                        <span>+</span> <span data-i18n="buttons.addService">Add another service</span>
+                    </button>
                 </div>
                 <div class="form-field">
                     <sl-input id="tmdbToken" type="text" label="TMDB Token" placeholder="Your TMDB token"></sl-input>
@@ -1132,6 +1274,8 @@
 
     <button class="lang-toggle" id="langToggle">EN</button>
 
+    <script src="/static/translations.js"></script>
+
     <div class="warning-modal" id="warningModal">
         <div class="warning-modal-content">
             <div class="warning-modal-header">
@@ -1156,135 +1300,8 @@
             excludedKeywords: [],
             passwordRequired: false,
             loading: false,
-            currentLanguage: 'en'
-        };
-
-        // ===========================
-        // Translations
-        // ===========================
-        const translations = {
-            en: {
-                title: 'WAStream Configuration',
-                sections: {
-                    languages: 'Languages',
-                    quality: 'Quality',
-                    service: 'Service',
-                    advanced: 'Advanced',
-                    security: 'Security'
-                },
-                labels: {
-                    preferredLanguages: 'Preferred languages',
-                    resolutions: 'Resolutions',
-                    maxResults: 'Max results per resolution',
-                    maxSize: 'Max size (GB)',
-                    debridService: 'Debrid service',
-                    debridApiKey: 'Debrid API Key',
-                    tmdbToken: 'TMDB Token',
-                    timeout: 'Timeout (seconds)',
-                    excludedKeywords: 'Excluded keywords',
-                    password: 'Password'
-                },
-                toggles: {
-                    cachedOnly: 'Cached links only',
-                    enableUsenet: 'Enable Usenet (TorBox only)',
-                    fullSeasonPacks: 'Include Full Season Packs (Usenet)'
-                },
-                help: {
-                    languagesEmpty: 'Leave empty to display all languages',
-                    resolutionsDefault: 'All resolutions by default',
-                    maxResultsInfo: 'Maximum number of results (0 = unlimited)',
-                    maxSizeInfo: 'Maximum file size (0 = no limit)',
-                    apiKeyLabel: 'API Key:',
-                    tokenLabel: 'Token:',
-                    timeoutInfo: 'Maximum search time (default: 20s)',
-                    excludedInfo: 'Streams with these words will be filtered',
-                    passwordRequired: 'Required to generate configuration'
-                },
-                buttons: {
-                    generate: 'Generate link',
-                    copy: 'Copy',
-                    openStremio: 'Open Stremio'
-                },
-                messages: {
-                    success: '✓ Configuration created successfully',
-                    copied: 'Link copied to clipboard!',
-                    fillRequired: 'Please fill all required fields',
-                    errorLoading: 'Error loading options',
-                    apiKeysRequired: 'API keys required',
-                    passwordRequired: 'Password required',
-                    incorrectPassword: 'Incorrect password',
-                    errorGenerating: 'Error generating link',
-                    errorCopying: 'Error copying',
-                    configLoaded: 'Configuration loaded successfully'
-                },
-                warnings: {
-                    premiumizeTitle: 'Premiumize Daily Limit Warning',
-                    premiumizeMessage: 'This addon uses mainly DDL from 1fichier. Premiumize allows 50GB of 1fichier downloads per day. Please verify at <a href="https://www.premiumize.me/services?q=allpremium" target="_blank" rel="noopener">premiumize.me/services</a> that you have not exceeded your 50GB daily limit, as exceeding it will use the % of your Fair-Use.',
-                    torboxTitle: 'TorBox Usenet - PRO Plan Required',
-                    torboxMessage: 'Usenet feature requires a TorBox PRO subscription. If you don\'t have a PRO plan, please do not enable the "Enable Usenet" option. Check your plan at <a href="https://torbox.app/settings?section=account" target="_blank" rel="noopener">torbox.app/settings</a> to verify your subscription.'
-                }
-            },
-            fr: {
-                title: 'Configuration WAStream',
-                sections: {
-                    languages: 'Langues',
-                    quality: 'Qualité',
-                    service: 'Service',
-                    advanced: 'Avancé',
-                    security: 'Sécurité'
-                },
-                labels: {
-                    preferredLanguages: 'Langues préférées',
-                    resolutions: 'Résolutions',
-                    maxResults: 'Résultats max par résolution',
-                    maxSize: 'Taille max (Go)',
-                    debridService: 'Service debrid',
-                    debridApiKey: 'Clé API Debrid',
-                    tmdbToken: 'Jeton d\'accès en lecture à l\'API',
-                    timeout: 'Délai (secondes)',
-                    excludedKeywords: 'Mots-clés exclus',
-                    password: 'Mot de passe'
-                },
-                toggles: {
-                    cachedOnly: 'Liens en cache uniquement',
-                    enableUsenet: 'Activer Usenet (TorBox uniquement)',
-                    fullSeasonPacks: 'Inclure les packs de saison (Usenet)'
-                },
-                help: {
-                    languagesEmpty: 'Laisser vide pour afficher toutes les langues',
-                    resolutionsDefault: 'Toutes les résolutions par défaut',
-                    maxResultsInfo: 'Nombre maximum de résultats (0 = illimité)',
-                    maxSizeInfo: 'Taille maximale du fichier (0 = aucune limite)',
-                    apiKeyLabel: 'Clé API :',
-                    tokenLabel: 'Token :',
-                    timeoutInfo: 'Temps de recherche maximum (défaut : 20s)',
-                    excludedInfo: 'Les streams avec ces mots seront filtrés',
-                    passwordRequired: 'Requis pour générer la configuration'
-                },
-                buttons: {
-                    generate: 'Générer le lien',
-                    copy: 'Copier',
-                    openStremio: 'Ouvrir Stremio'
-                },
-                messages: {
-                    success: '✓ Configuration créée avec succès',
-                    copied: 'Lien copié dans le presse-papiers !',
-                    fillRequired: 'Veuillez remplir tous les champs requis',
-                    errorLoading: 'Erreur lors du chargement des options',
-                    apiKeysRequired: 'Clés API requises',
-                    passwordRequired: 'Mot de passe requis',
-                    incorrectPassword: 'Mot de passe incorrect',
-                    errorGenerating: 'Erreur lors de la génération du lien',
-                    errorCopying: 'Erreur lors de la copie',
-                    configLoaded: 'Configuration chargée avec succès'
-                },
-                warnings: {
-                    premiumizeTitle: 'Avertissement Limite Quotidienne Premiumize',
-                    premiumizeMessage: 'Cet addon utilise principalement du DDL depuis 1fichier. Premiumize autorise 50Go de téléchargements 1fichier par jour. Veuillez vérifier sur <a href="https://www.premiumize.me/services?q=allpremium" target="_blank" rel="noopener">premiumize.me/services</a> que vous n\'avez pas dépassé votre limite quotidienne de 50Go, car si vous la dépassez, cela utilisera les % de votre Fair-Use.',
-                    torboxTitle: 'TorBox Usenet - Abonnement PRO Requis',
-                    torboxMessage: 'La fonctionnalité Usenet nécessite un abonnement TorBox PRO. Si vous n\'avez pas d\'abonnement PRO, veuillez ne pas activer l\'option "Activer Usenet". Vérifiez votre abonnement sur <a href="https://torbox.app/settings?section=account" target="_blank" rel="noopener">torbox.app/settings</a>.'
-                }
-            }
+            currentLanguage: 'en',
+            serviceConfig: {}
         };
 
         // ===========================
@@ -1295,8 +1312,8 @@
             resolutionSelect: null,
             maxResults: null,
             maxSize: null,
-            debridService: null,
-            debridKey: null,
+            debridServicesContainer: null,
+            addDebridServiceBtn: null,
             tmdbToken: null,
             password: null,
             timeout: null,
@@ -1318,13 +1335,22 @@
             addonLink: null,
             copyBtn: null,
             openBtn: null,
-            debridLink: null,
             alert: null,
             warningIndicator: null,
             warningModal: null,
             warningModalClose: null,
             warningModalTitle: null,
             warningModalBody: null
+        };
+
+        // ===========================
+        // Debrid Service Links
+        // ===========================
+        const DEBRID_LINKS = {
+            alldebrid: { href: 'https://alldebrid.com/apikeys', text: 'alldebrid.com/apikeys' },
+            torbox: { href: 'https://torbox.app/settings', text: 'torbox.app/settings' },
+            premiumize: { href: 'https://www.premiumize.me/account', text: 'premiumize.me/account' },
+            '1fichier': { href: 'https://1fichier.com/console/params.pl', text: '1fichier.com/console/params.pl' }
         };
 
         // ===========================
@@ -1381,21 +1407,318 @@
         };
 
         // ===========================
+        // Debrid Services Management
+        // ===========================
+        const getDebridServiceCount = () => {
+            return els.debridServicesContainer.querySelectorAll('.debrid-service-entry').length;
+        };
+
+        const updateServiceNumbers = () => {
+            const entries = els.debridServicesContainer.querySelectorAll('.debrid-service-entry');
+            const trans = translations[state.currentLanguage];
+            const label = trans.labels?.debridService || 'Debrid service';
+            const count = entries.length;
+
+            entries.forEach((entry, index) => {
+                entry.setAttribute('data-index', index);
+                entry.querySelector('.debrid-service-number').innerHTML = `<span data-i18n="labels.debridService">${label}</span> ${index + 1}`;
+
+                const removeBtn = entry.querySelector('.btn-remove');
+                const moveUpBtn = entry.querySelector('.btn-move-up');
+                const moveDownBtn = entry.querySelector('.btn-move-down');
+
+                if (removeBtn) {
+                    removeBtn.style.display = count > 1 ? 'flex' : 'none';
+                }
+
+                if (moveUpBtn) {
+                    moveUpBtn.disabled = index === 0;
+                }
+
+                if (moveDownBtn) {
+                    moveDownBtn.disabled = index === count - 1;
+                }
+            });
+        };
+
+        const moveServiceEntry = (entry, direction) => {
+            const entries = Array.from(els.debridServicesContainer.querySelectorAll('.debrid-service-entry'));
+            const currentIndex = entries.indexOf(entry);
+            const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+            if (newIndex < 0 || newIndex >= entries.length) return;
+
+            const targetEntry = entries[newIndex];
+
+            const currentSelect = entry.querySelector('.debridServiceSelect');
+            const currentInput = entry.querySelector('.debridKeyInput');
+            const currentHostsSelect = entry.querySelector('.hostsSelect');
+            const currentSourcesSelect = entry.querySelector('.sourcesSelect');
+            const targetSelect = targetEntry.querySelector('.debridServiceSelect');
+            const targetInput = targetEntry.querySelector('.debridKeyInput');
+            const targetHostsSelect = targetEntry.querySelector('.hostsSelect');
+            const targetSourcesSelect = targetEntry.querySelector('.sourcesSelect');
+
+            const currentService = currentSelect.value;
+            const currentApiKey = currentInput.value;
+            const currentHosts = currentHostsSelect ? [...(currentHostsSelect.value || [])] : [];
+            const currentSources = currentSourcesSelect ? [...(currentSourcesSelect.value || [])] : [];
+            const targetService = targetSelect.value;
+            const targetApiKey = targetInput.value;
+            const targetHosts = targetHostsSelect ? [...(targetHostsSelect.value || [])] : [];
+            const targetSources = targetSourcesSelect ? [...(targetSourcesSelect.value || [])] : [];
+
+            currentSelect.value = targetService;
+            currentInput.value = targetApiKey;
+            targetSelect.value = currentService;
+            targetInput.value = currentApiKey;
+
+            updateDebridLink(entry, targetService);
+            updateDebridLink(targetEntry, currentService);
+
+            if (currentHostsSelect) currentHostsSelect.value = targetHosts;
+            if (currentSourcesSelect) currentSourcesSelect.value = targetSources;
+            if (targetHostsSelect) targetHostsSelect.value = currentHosts;
+            if (targetSourcesSelect) targetSourcesSelect.value = currentSources;
+
+            updateServiceNumbers();
+            checkNzbAvailability();
+            checkWarningIndicator();
+        };
+
+        const updateDebridLink = (entry, service) => {
+            const link = entry.querySelector('.debridLink');
+            if (link && DEBRID_LINKS[service]) {
+                link.href = DEBRID_LINKS[service].href;
+                link.textContent = DEBRID_LINKS[service].text;
+            }
+            updateHostsSourcesOptions(entry, service);
+        };
+
+        const updateHostsSourcesOptions = (entry, service) => {
+            const hostsSelect = entry.querySelector('.hostsSelect');
+            const sourcesSelect = entry.querySelector('.sourcesSelect');
+
+            if (!hostsSelect || !sourcesSelect) return;
+
+            hostsSelect.innerHTML = '';
+            sourcesSelect.innerHTML = '';
+
+            const config = state.serviceConfig[service];
+            if (!config) return;
+
+            if (config.hosts && config.hosts.length > 0) {
+                config.hosts.forEach(host => {
+                    const opt = document.createElement('sl-option');
+                    opt.value = host;
+                    opt.textContent = host;
+                    hostsSelect.appendChild(opt);
+                });
+            }
+
+            if (config.sources && config.sources.length > 0) {
+                config.sources.forEach(source => {
+                    const opt = document.createElement('sl-option');
+                    opt.value = source;
+                    opt.textContent = source;
+                    sourcesSelect.appendChild(opt);
+                });
+            }
+        };
+
+        const checkNzbAvailability = () => {
+            const entries = els.debridServicesContainer.querySelectorAll('.debrid-service-entry');
+            let hasTorbox = false;
+
+            entries.forEach(entry => {
+                const select = entry.querySelector('.debridServiceSelect');
+                if (select && select.value === 'torbox') {
+                    hasTorbox = true;
+                }
+            });
+
+            if (hasTorbox) {
+                els.nzbToggle.style.pointerEvents = 'auto';
+                els.nzbToggle.style.opacity = '1';
+                if (els.enableNzb.checked) {
+                    els.fullSeasonToggle.style.pointerEvents = 'auto';
+                    els.fullSeasonToggle.style.opacity = '1';
+                }
+            } else {
+                els.nzbToggle.style.pointerEvents = 'none';
+                els.nzbToggle.style.opacity = '0.6';
+                els.fullSeasonToggle.style.pointerEvents = 'none';
+                els.fullSeasonToggle.style.opacity = '0.6';
+                els.enableNzb.checked = false;
+                els.nzbToggleBtn.classList.remove('active');
+                els.enableFullSeason.checked = false;
+                els.fullSeasonToggleBtn.classList.remove('active');
+            }
+        };
+
+        const checkWarningIndicator = () => {
+            const entries = els.debridServicesContainer.querySelectorAll('.debrid-service-entry');
+            let showWarning = false;
+            let warningService = null;
+
+            entries.forEach(entry => {
+                const select = entry.querySelector('.debridServiceSelect');
+                if (select && (select.value === 'premiumize' || select.value === 'torbox')) {
+                    showWarning = true;
+                    warningService = select.value;
+                }
+            });
+
+            if (showWarning && warningService) {
+                const trans = translations[state.currentLanguage];
+                const warningKey = warningService === 'premiumize' ? 'premiumize' : 'torbox';
+                els.warningModalTitle.textContent = trans.warnings[`${warningKey}Title`];
+                els.warningModalBody.innerHTML = trans.warnings[`${warningKey}Message`];
+                els.warningIndicator.classList.add('show');
+            } else {
+                els.warningIndicator.classList.remove('show');
+                els.warningModal.classList.remove('show');
+            }
+        };
+
+        const addDebridServiceEntry = (service = 'alldebrid', apiKey = '', hosts = [], sources = []) => {
+            const index = getDebridServiceCount();
+            const trans = translations[state.currentLanguage];
+            const label = trans.labels?.debridService || 'Debrid service';
+
+            const entry = document.createElement('div');
+            entry.className = 'debrid-service-entry';
+            entry.setAttribute('data-index', index);
+
+            const linkInfo = DEBRID_LINKS[service] || DEBRID_LINKS.alldebrid;
+
+            entry.innerHTML = `
+                <div class="debrid-service-header">
+                    <span class="debrid-service-number"><span data-i18n="labels.debridService">${label}</span> ${index + 1}</span>
+                    <div class="debrid-service-actions">
+                        <button type="button" class="btn-service-action btn-move-up" title="${trans.buttons?.moveUp || 'Move up'}"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg></button>
+                        <button type="button" class="btn-service-action btn-move-down" title="${trans.buttons?.moveDown || 'Move down'}"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></button>
+                        <button type="button" class="btn-service-action btn-remove" title="${trans.buttons?.removeService || 'Remove service'}"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <sl-select class="debridServiceSelect" label="${trans.labels?.debridService || 'Debrid service'}" value="${service}">
+                        <sl-option value="alldebrid">AllDebrid</sl-option>
+                        <sl-option value="torbox">TorBox</sl-option>
+                        <sl-option value="premiumize">Premiumize</sl-option>
+                        <sl-option value="1fichier">1fichier</sl-option>
+                    </sl-select>
+                </div>
+                <div class="form-field">
+                    <sl-input class="debridKeyInput" type="text" label="${trans.labels?.debridApiKey || 'Debrid API Key'}" placeholder="Your API key" value="${apiKey}"></sl-input>
+                    <span class="field-help"><span data-i18n="help.apiKeyLabel">${trans.help?.apiKeyLabel || 'API Key:'}</span> <a href="${linkInfo.href}" target="_blank" rel="noopener" class="debridLink">${linkInfo.text}</a></span>
+                </div>
+                <div class="form-field service-hosts-field">
+                    <sl-select class="hostsSelect" multiple clearable label="${trans.labels?.hosts || 'Hosts'}" placeholder="${trans.placeholders?.allHosts || 'All hosts (default)'}"></sl-select>
+                    <span class="field-help" data-i18n="help.hostsInfo">${trans.help?.hostsInfo || 'Select specific hosts or leave empty for all'}</span>
+                </div>
+                <div class="form-field service-sources-field">
+                    <sl-select class="sourcesSelect" multiple clearable label="${trans.labels?.sources || 'Sources'}" placeholder="${trans.placeholders?.allSources || 'All sources (default)'}"></sl-select>
+                    <span class="field-help" data-i18n="help.sourcesInfo">${trans.help?.sourcesInfo || 'Select specific sources or leave empty for all'}</span>
+                </div>
+            `;
+
+            els.debridServicesContainer.appendChild(entry);
+
+            const select = entry.querySelector('.debridServiceSelect');
+            const removeBtn = entry.querySelector('.btn-remove');
+            const moveUpBtn = entry.querySelector('.btn-move-up');
+            const moveDownBtn = entry.querySelector('.btn-move-down');
+            const hostsSelect = entry.querySelector('.hostsSelect');
+            const sourcesSelect = entry.querySelector('.sourcesSelect');
+
+            select.addEventListener('sl-change', (e) => {
+                updateDebridLink(entry, e.target.value);
+                checkNzbAvailability();
+                checkWarningIndicator();
+            });
+
+            removeBtn.addEventListener('click', () => {
+                entry.remove();
+                updateServiceNumbers();
+                checkNzbAvailability();
+                checkWarningIndicator();
+            });
+
+            moveUpBtn.addEventListener('click', () => moveServiceEntry(entry, 'up'));
+            moveDownBtn.addEventListener('click', () => moveServiceEntry(entry, 'down'));
+
+            updateHostsSourcesOptions(entry, service);
+
+            if (hosts && hosts.length > 0) {
+                hostsSelect.value = hosts;
+            }
+            if (sources && sources.length > 0) {
+                sourcesSelect.value = sources;
+            }
+
+            updateServiceNumbers();
+            checkNzbAvailability();
+            checkWarningIndicator();
+        };
+
+        const getDebridServices = () => {
+            const services = [];
+            const entries = els.debridServicesContainer.querySelectorAll('.debrid-service-entry');
+
+            entries.forEach(entry => {
+                const select = entry.querySelector('.debridServiceSelect');
+                const input = entry.querySelector('.debridKeyInput');
+                const hostsSelect = entry.querySelector('.hostsSelect');
+                const sourcesSelect = entry.querySelector('.sourcesSelect');
+
+                if (select && input) {
+                    const service = select.value;
+                    const apiKey = input.value.trim();
+
+                    if (service && apiKey) {
+                        const serviceEntry = { service, api_key: apiKey };
+
+                        if (hostsSelect && hostsSelect.value && hostsSelect.value.length > 0) {
+                            serviceEntry.hosts = hostsSelect.value;
+                        }
+
+                        if (sourcesSelect && sourcesSelect.value && sourcesSelect.value.length > 0) {
+                            serviceEntry.sources = sourcesSelect.value;
+                        }
+
+                        services.push(serviceEntry);
+                    }
+                }
+            });
+
+            return services;
+        };
+
+        const clearDebridServices = () => {
+            els.debridServicesContainer.innerHTML = '';
+        };
+
+        // ===========================
         // API
         // ===========================
         const loadOptions = async () => {
             try {
-                const [langRes, resRes, pwdRes] = await Promise.all([
+                const [langRes, resRes, pwdRes, svcRes] = await Promise.all([
                     fetch('/available/languages'),
                     fetch('/available/resolutions'),
-                    fetch('/password-config')
+                    fetch('/password-config'),
+                    fetch('/available/services')
                 ]);
 
-                const [langData, resData, pwdData] = await Promise.all([
+                const [langData, resData, pwdData, svcData] = await Promise.all([
                     langRes.json(),
                     resRes.json(),
-                    pwdRes.json()
+                    pwdRes.json(),
+                    svcRes.json()
                 ]);
+
+                state.serviceConfig = svcData;
 
                 langData.languages.forEach(lang => {
                     const opt = document.createElement('sl-option');
@@ -1422,13 +1745,23 @@
             }
         };
 
+        const verifyApiKey = async (service, apiKey) => {
+            try {
+                const res = await fetch(`/verify-api-key?service=${encodeURIComponent(service)}&api_key=${encodeURIComponent(apiKey)}`);
+                const data = await res.json();
+                return data.valid;
+            } catch (error) {
+                console.error('Error verifying API key:', error);
+                return false;
+            }
+        };
+
         const generateLink = async () => {
-            const debridService = els.debridService.value;
-            const debridKey = els.debridKey.value.trim();
+            const debridServices = getDebridServices();
             const tmdbToken = els.tmdbToken.value.trim();
             const password = els.password.value.trim();
 
-            if (!debridKey || !tmdbToken) {
+            if (debridServices.length === 0 || !tmdbToken) {
                 showAlert(t('messages.apiKeysRequired'));
                 return;
             }
@@ -1454,11 +1787,34 @@
                     }
                 }
 
+                showAlert(t('messages.validatingKeys'), 10000);
+
+                const verificationPromises = [
+                    verifyApiKey('tmdb', tmdbToken),
+                    ...debridServices.map(s => verifyApiKey(s.service, s.api_key))
+                ];
+
+                const results = await Promise.all(verificationPromises);
+                const tmdbValid = results[0];
+                const debridResults = results.slice(1);
+
+                if (!tmdbValid) {
+                    showAlert(t('messages.invalidTmdbToken'));
+                    setLoading(false);
+                    return;
+                }
+
+                const invalidIndex = debridResults.findIndex(valid => !valid);
+                if (invalidIndex !== -1) {
+                    showAlert(t('messages.invalidDebridKey') + ` (${debridServices[invalidIndex].service})`);
+                    setLoading(false);
+                    return;
+                }
+
                 const selectedLanguages = (els.languageSelect.value || []).map(lang => lang.replace(/_/g, ' '));
 
                 const config = {
-                    debrid_service: debridService,
-                    debrid_api_key: debridKey,
+                    debrid_services: debridServices,
                     tmdb_api_token: tmdbToken,
                     languages: selectedLanguages,
                     resolutions: els.resolutionSelect.value || [],
@@ -1547,59 +1903,48 @@
                 els.fullSeasonToggleBtn.classList.toggle('active', els.enableFullSeason.checked);
             });
 
-            els.debridService.addEventListener('sl-change', (e) => {
-                const service = e.target.value;
-                const isTorbox = service === 'torbox';
-                const isPremiumize = service === 'premiumize';
-
-                if (isTorbox) {
-                    els.debridLink.href = 'https://torbox.app/settings';
-                    els.debridLink.textContent = 'torbox.app/settings';
-                } else if (isPremiumize) {
-                    els.debridLink.href = 'https://www.premiumize.me/account';
-                    els.debridLink.textContent = 'premiumize.me/account';
-                } else {
-                    els.debridLink.href = 'https://alldebrid.com/apikeys';
-                    els.debridLink.textContent = 'alldebrid.com/apikeys';
-                }
-
-                if (isPremiumize || isTorbox) {
-                    const warningKey = isPremiumize ? 'premiumize' : 'torbox';
-                    const trans = translations[state.currentLanguage];
-
-                    els.warningModalTitle.textContent = trans.warnings[`${warningKey}Title`];
-                    els.warningModalBody.innerHTML = trans.warnings[`${warningKey}Message`];
-
-                    els.warningIndicator.classList.add('show');
-                } else {
-                    els.warningIndicator.classList.remove('show');
-                    els.warningModal.classList.remove('show');
-                }
-
-                els.nzbToggle.style.display = 'block';
-                els.fullSeasonToggle.style.display = 'block';
-
-                if (isTorbox) {
-                    els.nzbToggle.style.pointerEvents = 'auto';
-                    els.nzbToggle.style.opacity = '1';
-                    if (els.enableNzb.checked) {
-                        els.fullSeasonToggle.style.pointerEvents = 'auto';
-                        els.fullSeasonToggle.style.opacity = '1';
-                    } else {
-                        els.fullSeasonToggle.style.pointerEvents = 'none';
-                        els.fullSeasonToggle.style.opacity = '0.6';
-                    }
-                } else {
-                    els.nzbToggle.style.pointerEvents = 'none';
-                    els.nzbToggle.style.opacity = '0.6';
-                    els.fullSeasonToggle.style.pointerEvents = 'none';
-                    els.fullSeasonToggle.style.opacity = '0.6';
-                    els.enableNzb.checked = false;
-                    els.nzbToggleBtn.classList.remove('active');
-                    els.enableFullSeason.checked = false;
-                    els.fullSeasonToggleBtn.classList.remove('active');
-                }
+            els.addDebridServiceBtn.addEventListener('click', () => {
+                addDebridServiceEntry();
             });
+
+            const initFirstServiceEntry = () => {
+                const firstEntry = els.debridServicesContainer.querySelector('.debrid-service-entry');
+                if (firstEntry) {
+                    const select = firstEntry.querySelector('.debridServiceSelect');
+                    const removeBtn = firstEntry.querySelector('.btn-remove');
+                    const moveUpBtn = firstEntry.querySelector('.btn-move-up');
+                    const moveDownBtn = firstEntry.querySelector('.btn-move-down');
+
+                    if (select) {
+                        select.addEventListener('sl-change', (e) => {
+                            updateDebridLink(firstEntry, e.target.value);
+                            checkNzbAvailability();
+                            checkWarningIndicator();
+                        });
+                    }
+
+                    if (removeBtn) {
+                        removeBtn.addEventListener('click', () => {
+                            if (getDebridServiceCount() > 1) {
+                                firstEntry.remove();
+                                updateServiceNumbers();
+                                checkNzbAvailability();
+                                checkWarningIndicator();
+                            }
+                        });
+                    }
+
+                    if (moveUpBtn) {
+                        moveUpBtn.addEventListener('click', () => moveServiceEntry(firstEntry, 'up'));
+                    }
+
+                    if (moveDownBtn) {
+                        moveDownBtn.addEventListener('click', () => moveServiceEntry(firstEntry, 'down'));
+                    }
+                }
+            };
+
+            initFirstServiceEntry();
 
             els.generateBtn.addEventListener('click', generateLink);
             els.copyBtn.addEventListener('click', copyLink);
@@ -1645,10 +1990,108 @@
                 const decoded = atob(b64config);
                 const config = JSON.parse(decoded);
 
-                if (config.debrid_service) els.debridService.value = config.debrid_service;
-                if (config.debrid_api_key) els.debridKey.value = config.debrid_api_key;
+                let debridServices = [];
+                if (config.debrid_services && Array.isArray(config.debrid_services)) {
+                    debridServices = config.debrid_services;
+                } else if (config.debrid_service && config.debrid_api_key) {
+                    debridServices = [{
+                        service: config.debrid_service,
+                        api_key: config.debrid_api_key
+                    }];
+                }
+
+                if (debridServices.length > 0) {
+                    clearDebridServices();
+
+                    debridServices.forEach((serviceEntry, index) => {
+                        if (index === 0) {
+                            const firstEntry = document.createElement('div');
+                            firstEntry.className = 'debrid-service-entry';
+                            firstEntry.setAttribute('data-index', '0');
+
+                            const trans = translations[state.currentLanguage];
+                            const label = trans.labels?.debridService || 'Debrid service';
+                            const linkInfo = DEBRID_LINKS[serviceEntry.service] || DEBRID_LINKS.alldebrid;
+
+                            firstEntry.innerHTML = `
+                                <div class="debrid-service-header">
+                                    <span class="debrid-service-number"><span data-i18n="labels.debridService">${label}</span> 1</span>
+                                    <div class="debrid-service-actions">
+                                        <button type="button" class="btn-service-action btn-move-up" title="${trans.buttons?.moveUp || 'Move up'}" disabled><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg></button>
+                                        <button type="button" class="btn-service-action btn-move-down" title="${trans.buttons?.moveDown || 'Move down'}" disabled><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg></button>
+                                        <button type="button" class="btn-service-action btn-remove" title="${trans.buttons?.removeService || 'Remove service'}" style="display: none;"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                                    </div>
+                                </div>
+                                <div class="form-field">
+                                    <sl-select class="debridServiceSelect" label="${trans.labels?.debridService || 'Debrid service'}" value="${serviceEntry.service}">
+                                        <sl-option value="alldebrid">AllDebrid</sl-option>
+                                        <sl-option value="torbox">TorBox</sl-option>
+                                        <sl-option value="premiumize">Premiumize</sl-option>
+                                        <sl-option value="1fichier">1fichier</sl-option>
+                                    </sl-select>
+                                </div>
+                                <div class="form-field">
+                                    <sl-input class="debridKeyInput" type="text" label="${trans.labels?.debridApiKey || 'Debrid API Key'}" placeholder="Your API key" value="${serviceEntry.api_key}"></sl-input>
+                                    <span class="field-help"><span data-i18n="help.apiKeyLabel">${trans.help?.apiKeyLabel || 'API Key:'}</span> <a href="${linkInfo.href}" target="_blank" rel="noopener" class="debridLink">${linkInfo.text}</a></span>
+                                </div>
+                                <div class="form-field service-hosts-field">
+                                    <sl-select class="hostsSelect" multiple clearable label="${trans.labels?.hosts || 'Hosts'}" placeholder="${trans.placeholders?.allHosts || 'All hosts (default)'}"></sl-select>
+                                    <span class="field-help" data-i18n="help.hostsInfo">${trans.help?.hostsInfo || 'Select specific hosts or leave empty for all'}</span>
+                                </div>
+                                <div class="form-field service-sources-field">
+                                    <sl-select class="sourcesSelect" multiple clearable label="${trans.labels?.sources || 'Sources'}" placeholder="${trans.placeholders?.allSources || 'All sources (default)'}"></sl-select>
+                                    <span class="field-help" data-i18n="help.sourcesInfo">${trans.help?.sourcesInfo || 'Select specific sources or leave empty for all'}</span>
+                                </div>
+                            `;
+
+                            els.debridServicesContainer.appendChild(firstEntry);
+
+                            const select = firstEntry.querySelector('.debridServiceSelect');
+                            const removeBtn = firstEntry.querySelector('.btn-remove');
+                            const moveUpBtn = firstEntry.querySelector('.btn-move-up');
+                            const moveDownBtn = firstEntry.querySelector('.btn-move-down');
+                            const hostsSelect = firstEntry.querySelector('.hostsSelect');
+                            const sourcesSelect = firstEntry.querySelector('.sourcesSelect');
+
+                            select.addEventListener('sl-change', (e) => {
+                                updateDebridLink(firstEntry, e.target.value);
+                                checkNzbAvailability();
+                                checkWarningIndicator();
+                            });
+
+                            removeBtn.addEventListener('click', () => {
+                                if (getDebridServiceCount() > 1) {
+                                    firstEntry.remove();
+                                    updateServiceNumbers();
+                                    checkNzbAvailability();
+                                    checkWarningIndicator();
+                                }
+                            });
+
+                            moveUpBtn.addEventListener('click', () => moveServiceEntry(firstEntry, 'up'));
+                            moveDownBtn.addEventListener('click', () => moveServiceEntry(firstEntry, 'down'));
+
+                            updateHostsSourcesOptions(firstEntry, serviceEntry.service);
+
+                            if (serviceEntry.hosts && serviceEntry.hosts.length > 0) {
+                                hostsSelect.value = serviceEntry.hosts;
+                            }
+                            if (serviceEntry.sources && serviceEntry.sources.length > 0) {
+                                sourcesSelect.value = serviceEntry.sources;
+                            }
+                        } else {
+                            addDebridServiceEntry(serviceEntry.service, serviceEntry.api_key, serviceEntry.hosts || [], serviceEntry.sources || []);
+                        }
+                    });
+
+                    updateServiceNumbers();
+                    checkNzbAvailability();
+                    checkWarningIndicator();
+                }
+
                 if (config.tmdb_api_token) els.tmdbToken.value = config.tmdb_api_token;
                 if (config.timeout) els.timeout.value = config.timeout;
+                if (config.stream_request_timeout) els.timeout.value = config.stream_request_timeout;
                 if (config.max_results_per_resolution) els.maxResults.value = config.max_results_per_resolution;
                 if (config.max_size_gb) els.maxSize.value = config.max_size_gb;
                 if (config.show_only_cached) {
@@ -1656,7 +2099,8 @@
                     els.cachedToggleBtn.classList.add('active');
                 }
 
-                if (config.enable_nzb && config.debrid_service === 'torbox') {
+                const hasTorbox = debridServices.some(s => s.service === 'torbox');
+                if (config.enable_nzb && hasTorbox) {
                     els.enableNzb.checked = true;
                     els.nzbToggleBtn.classList.add('active');
                     els.nzbToggle.style.pointerEvents = 'auto';
@@ -1736,21 +2180,55 @@
             if (els.resolutionSelect) els.resolutionSelect.label = trans.labels.resolutions;
             if (els.maxResults) els.maxResults.label = trans.labels.maxResults;
             if (els.maxSize) els.maxSize.label = trans.labels.maxSize;
-            if (els.debridService) els.debridService.label = trans.labels.debridService;
-            if (els.debridKey) els.debridKey.label = trans.labels.debridApiKey;
             if (els.tmdbToken) els.tmdbToken.label = trans.labels.tmdbToken;
             if (els.timeout) els.timeout.label = trans.labels.timeout;
             if (els.password) els.password.label = trans.labels.password;
+
+            const entries = els.debridServicesContainer?.querySelectorAll('.debrid-service-entry');
+            if (entries) {
+                entries.forEach(entry => {
+                    const select = entry.querySelector('.debridServiceSelect');
+                    const input = entry.querySelector('.debridKeyInput');
+                    const removeBtn = entry.querySelector('.btn-remove');
+                    const moveUpBtn = entry.querySelector('.btn-move-up');
+                    const moveDownBtn = entry.querySelector('.btn-move-down');
+                    const hostsSelect = entry.querySelector('.hostsSelect');
+                    const sourcesSelect = entry.querySelector('.sourcesSelect');
+
+                    if (select) select.label = trans.labels?.debridService || 'Debrid service';
+                    if (input) input.label = trans.labels?.debridApiKey || 'Debrid API Key';
+                    if (hostsSelect) {
+                        hostsSelect.label = trans.labels?.hosts || 'Hosts';
+                        hostsSelect.placeholder = trans.placeholders?.allHosts || 'All hosts (default)';
+                    }
+                    if (sourcesSelect) {
+                        sourcesSelect.label = trans.labels?.sources || 'Sources';
+                        sourcesSelect.placeholder = trans.placeholders?.allSources || 'All sources (default)';
+                    }
+                    if (removeBtn) removeBtn.title = trans.buttons?.removeService || 'Remove service';
+                    if (moveUpBtn) moveUpBtn.title = trans.buttons?.moveUp || 'Move up';
+                    if (moveDownBtn) moveDownBtn.title = trans.buttons?.moveDown || 'Move down';
+                });
+            }
 
             const langBtn = document.getElementById('langToggle');
             if (langBtn) {
                 langBtn.textContent = lang.toUpperCase();
             }
 
-            if (els.warningModalTitle && els.warningModalBody) {
-                const service = els.debridService.value;
-                if (service === 'premiumize' || service === 'torbox') {
-                    const warningKey = service === 'premiumize' ? 'premiumize' : 'torbox';
+            if (els.warningModalTitle && els.warningModalBody && els.debridServicesContainer) {
+                const entries = els.debridServicesContainer.querySelectorAll('.debrid-service-entry');
+                let warningService = null;
+
+                entries.forEach(entry => {
+                    const select = entry.querySelector('.debridServiceSelect');
+                    if (select && (select.value === 'premiumize' || select.value === 'torbox')) {
+                        warningService = select.value;
+                    }
+                });
+
+                if (warningService) {
+                    const warningKey = warningService === 'premiumize' ? 'premiumize' : 'torbox';
                     els.warningModalTitle.textContent = trans.warnings[`${warningKey}Title`];
                     els.warningModalBody.innerHTML = trans.warnings[`${warningKey}Message`];
                 }
@@ -1780,6 +2258,15 @@
 
             attachEvents();
             await loadOptions();
+
+            const firstEntry = els.debridServicesContainer.querySelector('.debrid-service-entry');
+            if (firstEntry) {
+                const select = firstEntry.querySelector('.debridServiceSelect');
+                if (select) {
+                    updateHostsSourcesOptions(firstEntry, select.value || 'alldebrid');
+                }
+            }
+
             loadExistingConfig();
 
             const savedLang = localStorage.getItem('wastream_language') || 'en';

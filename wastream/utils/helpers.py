@@ -8,6 +8,7 @@ from urllib.parse import quote_plus, urlparse, parse_qs, unquote
 from wastream.utils.languages import normalize_language
 from wastream.utils.quality import normalize_quality
 
+
 # ===========================
 # Text Normalization
 # ===========================
@@ -22,11 +23,13 @@ def normalize_text(text: str) -> str:
 
     return text.strip()
 
+
 # ===========================
 # Configuration Encoding
 # ===========================
 def encode_config_to_base64(config: Dict[str, Any]) -> str:
     return b64encode(json.dumps(config).encode()).decode()
+
 
 # ===========================
 # Cache Key Creation
@@ -36,6 +39,7 @@ def create_cache_key(cache_type: str, title: str, year: Optional[str] = None) ->
     if year:
         cache_key += f":{year}"
     return cache_key
+
 
 # ===========================
 # URL Formatting
@@ -50,13 +54,15 @@ def format_url(url: str, base_url: str) -> str:
     if url.startswith("/"):
         return f"{base_url}{url}"
 
-    return url
+    return f"{base_url}/{url}"
+
 
 # ===========================
 # URL Parameter Encoding
 # ===========================
 def quote_url_param(param: str) -> str:
     return quote_plus(param)
+
 
 # ===========================
 # Filename Extraction and Decoding
@@ -75,6 +81,7 @@ def extract_and_decode_filename(url: str) -> Optional[str]:
         pass
     return None
 
+
 # ===========================
 # Movie Info Parsing
 # ===========================
@@ -86,7 +93,7 @@ def parse_movie_info(decoded_filename: str) -> Dict[str, str]:
         start = decoded_filename.find("[")
         end = decoded_filename.find("]", start)
         if start != -1 and end != -1:
-            quality = decoded_filename[start+1:end].strip()
+            quality = decoded_filename[start + 1:end].strip()
 
     if " - " in decoded_filename:
         parts = decoded_filename.split(" - ")
@@ -97,6 +104,7 @@ def parse_movie_info(decoded_filename: str) -> Dict[str, str]:
         "quality": normalize_quality(quality),
         "language": normalize_language(language)
     }
+
 
 # ===========================
 # Series Info Parsing
@@ -119,7 +127,7 @@ def parse_series_info(decoded_filename: str) -> Dict[str, str]:
         start = decoded_filename.find("[")
         end = decoded_filename.find("]", start)
         if start != -1 and end != -1:
-            bracket_content = decoded_filename[start+1:end].strip()
+            bracket_content = decoded_filename[start + 1:end].strip()
 
             parts = bracket_content.split()
 
@@ -137,11 +145,12 @@ def parse_series_info(decoded_filename: str) -> Dict[str, str]:
         "language": normalize_language(language)
     }
 
+
 # ===========================
 # Size Normalization
 # ===========================
 def normalize_size(raw_size: str) -> str:
-    if not raw_size or raw_size is None:
+    if not raw_size:
         return "Unknown"
 
     normalized = str(raw_size).strip()
@@ -156,6 +165,7 @@ def normalize_size(raw_size: str) -> str:
     normalized_upper = normalized_upper.replace(" KO", " KB")
 
     return normalized_upper
+
 
 # ===========================
 # Size Parsing to GB
@@ -186,6 +196,7 @@ def parse_size_to_gb(size_str: str) -> Optional[float]:
     except (ValueError, AttributeError):
         return None
 
+
 # ===========================
 # Results Deduplication and Sorting
 # ===========================
@@ -201,6 +212,7 @@ def deduplicate_and_sort_results(results: list, quality_sort_key_func) -> list:
 
     deduplicated.sort(key=quality_sort_key_func)
     return deduplicated
+
 
 # ===========================
 # Display Name Builder
@@ -236,8 +248,20 @@ def build_display_name(title: str, year: Optional[str] = None, language: str = "
 
     return display_name
 
+
 # ===========================
 # Debrid API Key Retrieval
 # ===========================
-def get_debrid_api_key(config: Dict[str, Any], debrid_service) -> str:
-    return config.get("debrid_api_key", "")
+def get_debrid_api_key(config: Dict[str, Any], service_name: str) -> str:
+    debrid_services = config.get("debrid_services", [])
+    for entry in debrid_services:
+        if entry.get("service") == service_name:
+            return entry.get("api_key", "")
+    return ""
+
+
+# ===========================
+# Debrid Services Retrieval
+# ===========================
+def get_debrid_services(config: Dict[str, Any]) -> list:
+    return config.get("debrid_services", [])

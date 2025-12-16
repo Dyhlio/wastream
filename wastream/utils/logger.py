@@ -2,10 +2,12 @@ import sys
 import logging
 from loguru import logger
 
+
 # ===========================
 # Configuration
 # ===========================
 LOG_LEVEL = "INFO"
+
 
 # ===========================
 # Log Contexts Configuration
@@ -21,6 +23,7 @@ CONTEXTS = {
     "DATABASE": {"color": "yellow", "icon": "🗄️"},
 }
 
+
 # ===========================
 # Log Level Icons
 # ===========================
@@ -29,6 +32,7 @@ LEVEL_ICONS = {
     "INFO": "ℹ️ ",
     "ERROR": "❌",
 }
+
 
 # ===========================
 # Log Formatter
@@ -48,6 +52,7 @@ def format_log(record):
         "<level>{message}</level>\n"
     )
 
+
 # ===========================
 # Logger Setup Function
 # ===========================
@@ -66,11 +71,13 @@ def setup_logger(level: str = "INFO"):
         diagnose=True,
     )
 
+
 # ===========================
 # Logger Factory
 # ===========================
 def get_logger(context: str):
     return logger.bind(context=context)
+
 
 # ===========================
 # Logger Instances
@@ -84,14 +91,10 @@ metadata_logger = get_logger("METADATA")
 cache_logger = get_logger("CACHE")
 database_logger = get_logger("DATABASE")
 
+
 # ===========================
 # External Loggers Suppression
 # ===========================
 logging.getLogger("uvicorn.access").disabled = True
 logging.getLogger("uvicorn.error").setLevel(logging.CRITICAL)
 logging.getLogger("fastapi").setLevel(logging.CRITICAL)
-
-# ===========================
-# Initialize Logger
-# ===========================
-setup_logger("INFO")

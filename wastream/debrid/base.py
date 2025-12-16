@@ -8,13 +8,14 @@ from wastream.utils.logger import debrid_logger, cache_logger
 # ===========================
 HTTP_RETRY_ERRORS = [429, 500, 502, 503, 504]
 
+
 # ===========================
 # Base Debrid Service Class
 # ===========================
 class BaseDebridService(ABC):
 
     @abstractmethod
-    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float = 0, user_season: Optional[str] = None, user_episode: Optional[str] = None) -> List[Dict]:
+    async def check_cache_and_enrich(self, results: List[Dict], api_key: str, config: Dict, timeout_remaining: float = 0, user_season: Optional[str] = None, user_episode: Optional[str] = None, user_hosts: Optional[List[str]] = None) -> List[Dict]:
         pass
 
     @abstractmethod

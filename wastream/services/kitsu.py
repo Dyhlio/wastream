@@ -4,6 +4,7 @@ from wastream.utils.http_client import http_client
 from wastream.utils.logger import metadata_logger
 from wastream.config.settings import settings
 
+
 # ===========================
 # Kitsu Service Class
 # ===========================
@@ -299,9 +300,10 @@ class KitsuService:
                                 dest_id = dest_data["id"]
 
                                 for included_item in data.get("included", []):
-                                    if (included_item["type"] == "anime" and
-                                        included_item["id"] == dest_id and
-                                        included_item["attributes"].get("subtype") == "TV"):
+                                    is_anime = included_item["type"] == "anime"
+                                    is_dest = included_item["id"] == dest_id
+                                    is_tv = included_item["attributes"].get("subtype") == "TV"
+                                    if is_anime and is_dest and is_tv:
                                         return dest_id
 
                                 dest_response = await http_client.get(
@@ -317,6 +319,7 @@ class KitsuService:
             metadata_logger.error(f"Kitsu {role} error: {type(e).__name__}")
 
         return None
+
 
 # ===========================
 # Singleton Instance
